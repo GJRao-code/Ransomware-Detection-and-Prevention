@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>ML Model Metrics</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+</head>
+<body>
+    <h2>ML Model Metrics Dashboard</h2>
+    <table border="1" cellpadding="6" cellspacing="0">
+        <tr>
+            <th>ID</th>
+            <th>Model</th>
+            <th>Version</th>
+            <th>Accuracy</th>
+            <th>Precision</th>
+            <th>Recall</th>
+            <th>F1 Score</th>
+            <th>Samples</th>
+            <th>Training Time (s)</th>
+            <th>Last Updated</th>
+            <th>Active?</th>
+        </tr>
+        {% for m in metrics %}
+        <tr>
+            <td>{{ m.id }}</td>
+            <td>{{ m.model_name }}</td>
+            <td>{{ m.model_version }}</td>
+            <td>{{ "%.2f"|format(m.accuracy) }}</td>
+            <td>{{ "%.2f"|format(m.precision) }}</td>
+            <td>{{ "%.2f"|format(m.recall) }}</td>
+            <td>{{ "%.2f"|format(m.f1_score) }}</td>
+            <td>{{ m.training_samples }}</td>
+            <td>{{ "%.2f"|format(m.training_time) }}</td>
+            <td>{{ m.last_updated.strftime("%Y-%m-%d %H:%M:%S") }}</td>
+            <td>{{ "✅" if m.is_active else "❌" }}</td>
+        </tr>
+        {% endfor %}
+    </table>
+</body>
+</html>

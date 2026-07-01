@@ -1,0 +1,616 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - RansomGuard Pro{% endblock %}
+
+{% block additional_css %}
+<style>
+.dashboard-card {
+    transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+}
+
+.dashboard-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+}
+
+.metric-icon {
+    width: 60px;
+    height: 60px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 24px;
+}
+
+.activity-item {
+    border-left: 3px solid transparent;
+    transition: all 0.3s ease;
+}
+
+.activity-item:hover {
+    border-left-color: var(--bs-primary);
+    background-color: var(--bs-light);
+}
+
+.threat-badge {
+    font-size: 0.75rem;
+    padding: 0.25rem 0.5rem;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <!-- Page Header -->
+    <div class="row mb-4">
+        <div class="col">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h1 class="h3 mb-2">
+                        <i class="fas fa-tachometer-alt text-primary me-2"></i>
+                        Security Dashboard
+                    </h1>
+                    <p class="text-muted mb-0">
+                        Welcome back, {{ current_user.get_full_name() }}. 
+                        System status: <span class="badge bg-success">Protected</span>
+                    </p>
+                </div>
+                <div>
+                    <button class="btn btn-outline-primary" onclick="refreshDashboard()">
+                        <i class="fas fa-sync-alt"></i>
+                        Refresh
+                    </button>
+                    <a href="{{ url_for('scan') }}" class="btn btn-primary">
+                        <i class="fas fa-search me-2"></i>
+                        Quick Scan
+                    </a>
+                    
+                </div>
+                
+
+            </div>
+        </div>
+    </div>
+
+    <!-- Key Metrics -->
+    <div class="row g-3 mb-4">
+        <div class="col-xl-3 col-md-6">
+            <div class="card dashboard-card neon-outline border-0 shadow-sm h-100">
+                <div class="card-body">
+                    <div class="d-flex align-items-center">
+                        <div class="metric-icon bg-success-subtle text-success me-3">
+                            <i class="fas fa-file-alt text-success"></i>
+                        </div>
+                        <div class="flex-grow-1">
+                            <div class="row">
+                                <div class="col">
+                                    <div class="text-muted small">Total Files Scanned</div>
+                                    <div class="h4 fw-bold mb-0">
+                                        {% set total_files = recent_scans|sum(attribute='files_scanned') or 0 %}
+                                        {{ "{:,}".format(total_files) }}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6">
+            <div class="card dashboard-card neon-outline border-0 shadow-sm h-100">
+                <div class="card-body">
+                    <div class="d-flex align-items-center">
+                        <div class="metric-icon text-danger me-3">
+                            <i class="fas fa-exclamation-triangle text-danger"></i>
+                        </div>
+                        <div class="flex-grow-1">
+                            <div class="row">
+                                <div class="col">
+                                    <div class="text-muted small">Active Threats</div>
+                                    <div class="h4 fw-bold mb-0">{{ active_threats }}</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6">
+            <div class="card dashboard-card neon-outline border-0 shadow-sm h-100">
+                <div class="card-body">
+                    <div class="d-flex align-items-center">
+                        <div class="metric-icon bg-warning-subtle text-warning me-3">
+                            <i class="fas fa-lock text-warning"></i>
+                        </div>
+                        <div class="flex-grow-1">
+                            <div class="row">
+                                <div class="col">
+                                    <div class="text-muted small">Quarantined Files</div>
+                                    <div class="h4 fw-bold mb-0">{{ quarantined_files }}</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6">
+            <div class="card dashboard-card neon-outline border-0 shadow-sm h-100" data-bs-toggle="modal" data-bs-target="#alertsModal">
+                <div class="card-body">
+                    <div class="d-flex align-items-center">
+                        <div class="metric-icon bg-info-subtle text-info me-3">
+                            <i class="fas fa-bell text-info"></i>
+                        </div>
+                        <div class="flex-grow-1">
+                            <div class="row">
+                                <div class="col">
+                                    <div class="text-muted small">Unread Alerts</div>
+                                    <div class="h4 fw-bold mb-0">{{ unread_alerts }}</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-4">
+        <!-- System Health -->
+        <div class="col-xl-4">
+            <div class="card dashboard-card neon-outline border-0 shadow-sm h-100">
+                <div class="card-header bg-transparent border-0 d-flex align-items-center justify-content-between">
+                    <h6 class="mb-0 fw-bold">
+                        <i class="fas fa-heartbeat text-primary me-2"></i>
+                        System Health
+                    </h6>
+                    {% if system_health %}
+                        <span class="badge bg-{{ 'success' if system_health.threat_level == 'low' else 'warning' if system_health.threat_level == 'medium' else 'danger' }}">
+                            {{ system_health.threat_level.title() }}
+                        </span>
+                    {% endif %}
+                </div>
+                <div class="card-body">
+                    {% if system_health %}
+                        <div class="mb-3">
+                            <div class="d-flex justify-content-between align-items-center mb-1">
+                                <small class="text-muted">CPU Usage</small>
+                                <small class="fw-semibold">{{ "%.1f"|format(system_health.cpu_usage) }}%</small>
+                            </div>
+                            <div class="progress" style="height: 6px;">
+                                <div class="progress-bar bg-{{ 'success' if system_health.cpu_usage < 50 else 'warning' if system_health.cpu_usage < 80 else 'danger' }}" 
+                                     role="progressbar" data-width="{{ system_health.cpu_usage }}" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" style="width: 0%"></div>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <div class="d-flex justify-content-between align-items-center mb-1">
+                                <small class="text-muted">Memory Usage</small>
+                                <small class="fw-semibold">{{ "%.1f"|format(system_health.memory_usage) }}%</small>
+                            </div>
+                            <div class="progress" style="height: 6px;">
+                                <div class="progress-bar bg-{{ 'success' if system_health.memory_usage < 60 else 'warning' if system_health.memory_usage < 85 else 'danger' }}" 
+                                     role="progressbar" data-width="{{ system_health.memory_usage }}" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" style="width: 0%"></div>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <div class="d-flex justify-content-between align-items-center mb-1">
+                                <small class="text-muted">Disk Usage</small>
+                                <small class="fw-semibold">{{ "%.1f"|format(system_health.disk_usage) }}%</small>
+                            </div>
+                            <div class="progress" style="height: 6px;">
+                                <div class="progress-bar bg-{{ 'success' if system_health.disk_usage < 70 else 'warning' if system_health.disk_usage < 90 else 'danger' }}" 
+                                     role="progressbar" data-width="{{ system_health.disk_usage }}" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" style="width: 0%"></div>
+                            </div>
+                        </div>
+
+                        <div class="row g-2 mt-3">
+                            <div class="col-6">
+                                <div class="text-center">
+                                    <div class="h6 mb-0">{{ system_health.active_processes }}</div>
+                                    <small class="text-muted">Active Processes</small>
+                                </div>
+                            </div>
+                            <div class="col-6">
+                                <div class="text-center">
+                                    <div class="h6 mb-0">{{ system_health.network_connections }}</div>
+                                    <small class="text-muted">Network Connections</small>
+                                </div>
+                            </div>
+                        </div>
+                    {% else %}
+                        <div class="text-center text-muted">
+                            <i class="fas fa-exclamation-circle mb-2"></i>
+                            <p class="mb-0">System health data unavailable</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        
+
+        <!-- Recent Activity -->
+        <div class="col-xl-4">
+            <div class="card dashboard-card neon-outline border-0 shadow-sm h-100">
+                <div class="card-header bg-transparent border-0 d-flex align-items-center justify-content-between">
+                    <h6 class="mb-0 fw-bold">
+                        <i class="fas fa-clock text-primary me-2"></i>
+                        Recent Scans
+                    </h6>
+                    <a href="{{ url_for('analytics') }}" class="btn btn-sm btn-outline-primary">
+                        View All
+                    </a>
+                </div>
+                <div class="card-body">
+                    {% if recent_scans %}
+                        <div class="timeline">
+                            {% for scan in recent_scans %}
+                                <a href="/scan_progress/{{ scan.id }}" class="activity-item p-2 rounded mb-2 text-decoration-none" style="display: block; cursor: pointer;" onclick="event.preventDefault(); window.location.href='/scan_progress/{{ scan.id }}';">
+                                    <div class="d-flex align-items-center">
+                                        <div class="me-3">
+                                            <i class="fas fa-{{ 'check-circle text-success' if scan.status == 'completed' else 'clock text-warning' if scan.status == 'running' else 'times-circle text-danger' }}"></i>
+                                        </div>
+                                        <div class="flex-grow-1">
+                                            <div class="d-flex justify-content-between align-items-start">
+                                                <div>
+                                                    <div class="fw-semibold small">{{ scan.scan_type.title() }} Scan</div>
+                                                    <div class="text-muted small">
+                                                        {{ scan.files_scanned }} files scanned
+                                                        {% if scan.threats_detected > 0 %}
+                                                            <span class="text-danger">• {{ scan.threats_detected }} threats</span>
+                                                        {% endif %}
+                                                    </div>
+                                                </div>
+                                                <small class="text-muted">
+                                                    {{ scan.start_time.strftime('%m/%d %H:%M') }}
+                                                </small>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </a>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <div class="text-center text-muted">
+                            <i class="fas fa-search mb-2"></i>
+                            <p class="mb-2">No scans performed yet</p>
+                            <a href="{{ url_for('scan') }}" class="btn btn-sm btn-primary">
+                                Start First Scan
+                            </a>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Actions & Threat Map -->
+    <div class="row g-4 mt-2">
+        <!-- Quick Actions -->
+        <div class="col-md-6">
+            <div class="card dashboard-card neon-outline border-0 shadow-sm">
+                <div class="card-header bg-transparent border-0">
+                    <h6 class="mb-0 fw-bold">
+                        <i class="fas fa-bolt text-primary me-2"></i>
+                        Quick Actions
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="row g-2">
+                        <div class="col-md-6">
+                            <a href="{{ url_for('scan') }}" class="btn btn-outline-primary w-100 mb-2">
+                                <i class="fas fa-search me-2"></i>
+                                Full System Scan
+                            </a>
+                        </div>
+                        <div class="col-md-6">
+                            <a href="{{ url_for('quarantine') }}" class="btn btn-outline-warning w-100 mb-2">
+                                <i class="fas fa-lock me-2"></i>
+                                Manage Quarantine
+                            </a>
+                        </div>
+                        <div class="col-md-6">
+                            <button class="btn btn-outline-info w-100 mb-2" onclick="updateDatabase()">
+                                <i class="fas fa-download me-2"></i>
+                                Update Signatures
+                            </button>
+                        </div>
+                        <div class="col-md-6">
+                            <a href="{{ url_for('analytics') }}" class="btn btn-outline-success w-100 mb-2">
+                                <i class="fas fa-chart-bar me-2"></i>
+                                View Analytics
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Real-time Chart -->
+        <div class="col-md-6">
+            <div class="card dashboard-card neon-outline border-0 shadow-sm">
+                <div class="card-header bg-transparent border-0">
+                    <h6 class="mb-0 fw-bold">
+                        <i class="fas fa-chart-area text-primary me-2"></i>
+                        Real-time System Monitoring
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <canvas id="systemHealthChart" height="200"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- System Update Modal -->
+<div class="modal fade" id="updateModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="fas fa-download me-2"></i>
+                    Update Threat Database
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="text-center">
+                    <div class="spinner-border text-primary mb-3" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                    <p>Downloading latest threat signatures...</p>
+                    <div class="progress">
+                        <div class="progress-bar progress-bar-striped progress-bar-animated" 
+                             role="progressbar" style="width: 0%" id="updateProgress"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block additional_js %}
+<script>
+let systemHealthChart;
+
+function initializeSystemHealthChart() {
+    const ctx = document.getElementById('systemHealthChart').getContext('2d');
+    const baseDatasets = [
+        {
+            label: 'CPU %',
+            data: [],
+            borderColor: '#dc3545',
+            backgroundColor: 'rgba(220, 53, 69, 0.1)',
+            tension: 0.1
+        },
+        {
+            label: 'Memory %',
+            data: [],
+            borderColor: '#ffc107',
+            backgroundColor: 'rgba(255, 193, 7, 0.1)',
+            tension: 0.1
+        },
+        {
+            label: 'Threat Level',
+            data: [],
+            borderColor: '#198754',
+            backgroundColor: 'rgba(25, 135, 84, 0.1)',
+            tension: 0.1
+        }
+    ];
+
+    const options = {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+            legend: { position: 'top' }
+        },
+        scales: {
+            y: { beginAtZero: true, max: 100 }
+        },
+        interaction: { intersect: false, mode: 'index' }
+    };
+
+    // Apply dark theme chart styling when dark theme is active
+    if (document.documentElement.getAttribute('data-theme') === 'dark') {
+        const textColor = getComputedStyle(document.documentElement).getPropertyValue('--text-primary').trim() || '#e2e8f0';
+        options.plugins.legend.labels = { color: textColor };
+        options.scales = {
+            y: {
+                beginAtZero: true,
+                max: 100,
+                ticks: { color: textColor },
+                grid: { color: 'rgba(255,255,255,0.04)' }
+            },
+            x: {
+                ticks: { color: textColor },
+                grid: { color: 'rgba(255,255,255,0.03)' }
+            }
+        };
+
+        // Use neon-ish accent for first dataset to stand out in dark mode
+        baseDatasets[0].borderColor = 'rgba(0,240,255,0.9)';
+        baseDatasets[0].backgroundColor = 'rgba(0,240,255,0.12)';
+    }
+
+    systemHealthChart = new Chart(ctx, { type: 'line', data: { labels: [], datasets: baseDatasets }, options });
+}
+
+function updateSystemHealthChart() {
+    fetch('/api/system_status')
+        .then(response => response.json())
+        .then(data => {
+            const now = new Date().toLocaleTimeString();
+            
+            // Add new data point
+            systemHealthChart.data.labels.push(now);
+            systemHealthChart.data.datasets[0].data.push(data.cpu_usage);
+            systemHealthChart.data.datasets[1].data.push(data.memory_usage);
+            
+            // Convert threat level to numeric
+            const threatLevels = { 'low': 20, 'medium': 50, 'high': 75, 'critical': 100 };
+            systemHealthChart.data.datasets[2].data.push(threatLevels[data.threat_level] || 0);
+            
+            // Keep only last 20 data points
+            if (systemHealthChart.data.labels.length > 20) {
+                systemHealthChart.data.labels.shift();
+                systemHealthChart.data.datasets.forEach(dataset => dataset.data.shift());
+            }
+            
+            systemHealthChart.update();
+        })
+        .catch(error => console.error('Error updating chart:', error));
+}
+
+function startRealTimeUpdates() {
+    // Update every 30 seconds
+    setInterval(updateSystemHealthChart, 30000);
+    // Initial update
+    updateSystemHealthChart();
+}
+
+function refreshDashboard() {
+    // Add loading state
+    const refreshBtn = event.target.closest('button');
+    const originalText = refreshBtn.innerHTML;
+    refreshBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Refreshing...';
+    refreshBtn.disabled = true;
+    
+    // Simulate refresh (in real app, this would reload data)
+    setTimeout(() => {
+        location.reload();
+    }, 1000);
+}
+
+function updateDatabase() {
+    const modal = new bootstrap.Modal(document.getElementById('updateModal'));
+    modal.show();
+    
+    const progressBar = document.getElementById('updateProgress');
+    let progress = 0;
+    
+    const updateInterval = setInterval(() => {
+        progress += Math.random() * 20;
+        if (progress >= 100) {
+            progress = 100;
+            clearInterval(updateInterval);
+            
+            setTimeout(() => {
+                modal.hide();
+                // Show success notification
+                showNotification('success', 'Threat database updated successfully!');
+            }, 500);
+        }
+        
+        progressBar.style.width = progress + '%';
+        progressBar.textContent = Math.round(progress) + '%';
+    }, 200);
+}
+
+function showNotification(type, message) {
+    // Create notification element
+    const notification = document.createElement('div');
+    notification.className = `alert alert-${type} alert-dismissible fade show position-fixed`;
+    notification.style.cssText = 'top: 20px; right: 20px; z-index: 9999; min-width: 300px;';
+    notification.innerHTML = `
+        <i class="fas fa-${type === 'success' ? 'check-circle' : 'exclamation-triangle'} me-2"></i>
+        ${message}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    `;
+    
+    document.body.appendChild(notification);
+    
+    // Auto remove after 5 seconds
+    setTimeout(() => {
+        if (notification.parentNode) {
+            notification.remove();
+        }
+    }, 5000);
+}
+
+document.addEventListener("DOMContentLoaded", function () {
+    // Initialize chart and realtime updates once
+    try {
+        initializeSystemHealthChart();
+        startRealTimeUpdates();
+    } catch (e) {
+        console.warn('Chart init error:', e);
+    }
+
+    // Initialize alerts modal content loader
+    const alertsModal = document.getElementById("alertsModal");
+    if (alertsModal) {
+        alertsModal.addEventListener("show.bs.modal", function () {
+            fetch("/alerts/list")
+                .then(response => response.text())
+                .then(html => {
+                    const el = document.getElementById("alertsContent");
+                    if (el) el.innerHTML = html;
+                })
+                .catch(() => {
+                    const el = document.getElementById("alertsContent");
+                    if (el) el.innerHTML = "<p class='text-danger'>Error loading alerts</p>";
+                });
+        });
+    }
+
+    // Handle "Mark All as Read" safely (may not exist on every page)
+    const markBtn = document.getElementById("markAllReadBtn");
+    if (markBtn) {
+        markBtn.addEventListener("click", function () {
+            fetch("/alerts/mark_all_read", { method: "POST" })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        const el = document.getElementById("alertsContent");
+                        if (el) el.innerHTML = "<p class='text-success'>All alerts marked as read.</p>";
+                        const countEl = document.querySelector(".h4.fw-bold.mb-0");
+                        if (countEl) countEl.innerText = "0";
+                    }
+                })
+                .catch(err => console.error(err));
+        });
+    }
+
+    // Set progress-bar widths from data attributes once (avoids inline CSS with templating)
+    document.querySelectorAll('.progress-bar[data-width]').forEach(function(el) {
+        const width = parseFloat(el.getAttribute('data-width')) || 0;
+        el.style.width = width + '%';
+        el.setAttribute('aria-valuenow', Math.round(width));
+    });
+});
+</script>
+<!-- Alerts Modal -->
+<div class="modal fade" id="alertsModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-lg modal-dialog-scrollable">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">
+          <i class="fas fa-bell me-2 text-info"></i>
+          Unread Threat Alerts
+        </h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body" id="alertsContent">
+        <p class="text-muted">Loading alerts...</p>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-outline-success" id="markAllReadBtn">
+          <i class="fas fa-check-double me-2"></i> Mark All as Read
+        </button>
+        <button class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{# theme toggle handled by static/js/theme.js - no per-page duplicate needed #}

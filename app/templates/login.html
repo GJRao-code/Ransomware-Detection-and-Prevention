@@ -1,0 +1,157 @@
+{% extends "base.html" %}
+
+{% block title %}Login - RansomGuard Pro{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row justify-content-center min-vh-100 align-items-center">
+        <div class="col-md-6 col-lg-5">
+            <div class="auth-card card shadow-lg border-0">
+                <div class="card-body p-5">
+                    <div class="text-center mb-4">
+                        <div class="auth-logo mb-3">
+                            <i class="fas fa-shield-alt text-primary"></i>
+                        </div>
+                        <h2 class="fw-bold">Welcome Back</h2>
+                        <p class="text-muted">Sign in to your RansomGuard account</p>
+                    </div>
+
+                    <form method="POST" class="needs-validation" novalidate>
+                        <div class="mb-3">
+                            <label for="username" class="form-label">Username</label>
+                            <div class="input-group">
+                                <span class="input-group-text">
+                                    <i class="fas fa-user"></i>
+                                </span>
+                                <input type="text" class="form-control" id="username" name="username" 
+                                       placeholder="Enter your username" required>
+                                <div class="invalid-feedback">
+                                    Please provide a valid username.
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="password" class="form-label">Password</label>
+                            <div class="input-group">
+                                <span class="input-group-text">
+                                    <i class="fas fa-lock"></i>
+                                </span>
+                                <input type="password" class="form-control" id="password" name="password" 
+                                       placeholder="Enter your password" required>
+                                <button class="btn btn-outline-secondary" type="button" id="togglePassword">
+                                    <i class="fas fa-eye"></i>
+                                </button>
+                                <div class="invalid-feedback">
+                                    Please provide your password.
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="mb-3 form-check">
+                            <input type="checkbox" class="form-check-input" id="remember" name="remember">
+                            <label class="form-check-label" for="remember">
+                                Remember me on this device
+                            </label>
+                        </div>
+
+                        <div class="d-grid">
+                            <button type="submit" class="btn btn-primary btn-lg">
+                                <i class="fas fa-sign-in-alt me-2"></i>
+                                Sign In
+                            </button>
+                        </div>
+                    </form>
+
+                    <hr class="my-4">
+
+                    <div class="text-center">
+                        <p class="mb-0">Don't have an account? 
+                            <a href="{{ url_for('register') }}" class="text-primary fw-semibold text-decoration-none">
+                                Create one here
+                            </a>
+                        </p>
+                        <p class="mb-0 mt-2">
+                            <a href="{{ url_for('forgot_password') }}" class="text-muted text-decoration-none">
+                                Forgot your password?
+                            </a>
+                        </p>
+                    </div>
+
+                    <!-- Security Notice -->
+                    <div class="security-notice mt-4 p-3 bg-light rounded">
+                        <div class="d-flex align-items-start">
+                            <i class="fas fa-info-circle text-info me-2 mt-1"></i>
+                            <div class="small text-muted">
+                                <strong>Security Notice:</strong> Your login is protected with advanced security measures. 
+                                We monitor all access attempts to ensure the safety of your account.
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Login Animation -->
+<div class="login-animation">
+    <div class="floating-icon" style="--delay: 0s;">
+        <i class="fas fa-shield-alt"></i>
+    </div>
+    <div class="floating-icon" style="--delay: 1s;">
+        <i class="fas fa-lock"></i>
+    </div>
+    <div class="floating-icon" style="--delay: 2s;">
+        <i class="fas fa-key"></i>
+    </div>
+    <div class="floating-icon" style="--delay: 3s;">
+        <i class="fas fa-fingerprint"></i>
+    </div>
+</div>
+{% endblock %}
+
+{% block additional_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Form validation
+    const forms = document.querySelectorAll('.needs-validation');
+    
+    Array.prototype.slice.call(forms).forEach(function(form) {
+        form.addEventListener('submit', function(event) {
+            if (!form.checkValidity()) {
+                event.preventDefault();
+                event.stopPropagation();
+            }
+            form.classList.add('was-validated');
+        }, false);
+    });
+
+    // Password toggle
+    const togglePassword = document.getElementById('togglePassword');
+    const passwordInput = document.getElementById('password');
+    
+    if (togglePassword && passwordInput) {
+        togglePassword.addEventListener('click', function() {
+            const type = passwordInput.getAttribute('type') === 'password' ? 'text' : 'password';
+            passwordInput.setAttribute('type', type);
+            
+            const icon = this.querySelector('i');
+            icon.classList.toggle('fa-eye');
+            icon.classList.toggle('fa-eye-slash');
+        });
+    }
+
+    // Add loading state to form submission
+    const loginForm = document.querySelector('form');
+    const submitButton = loginForm.querySelector('button[type="submit"]');
+    
+    loginForm.addEventListener('submit', function() {
+        if (this.checkValidity()) {
+            submitButton.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Signing In...';
+            submitButton.disabled = true;
+        }
+    });
+});
+</script>
+{% endblock %}

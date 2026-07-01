@@ -1,0 +1,19 @@
+{% if alerts %}
+    <ul class="list-group">
+    {% for alert in alerts %}
+        <li class="list-group-item">
+            <strong>[{{ alert.severity }}]</strong> {{ alert.title }} <br>
+            <small>{{ alert.description }}</small><br>
+            {% if alert.file_path %}
+                <em>File: {{ alert.file_path }}</em><br>
+            {% endif %}
+            {% if alert.process_name %}
+                <em>Process: {{ alert.process_name }}</em><br>
+            {% endif %}
+            <small class="text-muted">Detected at: {{ alert.created_at.strftime('%Y-%m-%d %H:%M:%S') }}</small>
+        </li>
+    {% endfor %}
+    </ul>
+{% else %}
+    <p class="text-center text-success">No unread alerts 🎉</p>
+{% endif %}

@@ -1,0 +1,845 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Ransomware Detection Platform{% endblock %}</title>
+    
+        <!-- Synchronously set theme to avoid flash-of-unstyled-theme -->
+        <script>
+            (function() {
+                var theme = localStorage.getItem('theme');
+                if (theme) {
+                    document.documentElement.setAttribute('data-theme', theme);
+                }
+            })();
+        </script>
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    
+    <!-- Font Awesome Icons -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Load local charts helper with a fallback if the file cannot be served -->
+    <script>
+    (function(){
+        const localChartsSrc = "{{ url_for('static', filename='js/charts.js') }}";
+
+        function defineFallback() {
+            // Minimal replacement for the project's ChartManager so charts still work
+            window.chartManager = {
+                colors: {
+                    primary: getComputedStyle(document.documentElement).getPropertyValue('--bs-primary') || '#0d6efd',
+                    danger: '#dc3545',
+                    warning: '#ffc107',
+                    info: '#0dcaf0',
+                    success: '#198754',
+                    secondary: '#6c757d'
+                },
+                createChart: function(canvasId, type, data, options) {
+                    try {
+                        const el = document.getElementById(canvasId);
+                        if (!el) return null;
+                        const ctx = el.getContext('2d');
+                        return new Chart(ctx, { type: type, data: data || { labels: [], datasets: [] }, options: options || {} });
+                    } catch (e) {
+                        console.error('Fallback createChart failed', e);
+                        return null;
+                    }
+                },
+                createLineChart: function(id,d,o){ return this.createChart(id,'line',d,o); },
+                createBarChart: function(id,d,o){ return this.createChart(id,'bar',d,o); },
+                createPieChart: function(id,d,o){ return this.createChart(id,'pie',d,o); },
+                createDoughnutChart: function(id,d,o){ return this.createChart(id,'doughnut',d,o); },
+                createRadarChart: function(id,d,o){ return this.createChart(id,'radar',d,o); },
+                destroyAllCharts: function(){ /* best-effort no-op for fallback */ }
+            };
+
+            // Auto-initialize very simple charts for elements that declare data-chart
+            document.addEventListener('DOMContentLoaded', function(){
+                const elems = document.querySelectorAll('[data-chart]');
+                elems.forEach(el => {
+                    const chartType = el.dataset.chart;
+                    if (el.id && chartType) {
+                        try {
+                            // Attempt to use sampleData generator if available
+                            const sample = window.generateSampleData ? window.generateSampleData(chartType) : { labels: [], datasets: [] };
+                            window.chartManager.createChart(el.id, chartType, sample);
+                        } catch (e) { /* swallow */ }
+                    }
+                });
+            });
+
+            console.warn('charts.js could not be loaded from static files — using fallback chartManager.');
+        }
+
+        const s = document.createElement('script');
+        s.src = localChartsSrc;
+        s.onload = function(){ console.log('Loaded local charts.js'); };
+        s.onerror = function(){ console.warn('Failed to load local charts.js, falling back.'); defineFallback(); };
+        document.head.appendChild(s);
+    })();
+    </script>
+    
+    <!-- Custom CSS -->
+    <link href="{{ url_for('static', filename='css/style.css') }}" rel="stylesheet">
+    
+    <!-- Security Dashboard Styles -->
+    <style>
+        .security-dashboard {
+            background: var(--card-bg) !important;
+            border: 1px solid var(--border-color) !important;
+            border-radius: var(--radius) !important;
+            box-shadow: var(--card-shadow) !important;
+            padding: 1.5rem !important;
+            color: var(--text-primary) !important;
+            backdrop-filter: blur(10px);
+            transition: all 0.3s ease;
+            margin: 1rem 0;
+        }
+        
+        [data-theme="dark"] .security-dashboard {
+            background: rgba(37, 40, 61, 0.8) !important;
+            border: 1px solid rgba(138, 146, 255, 0.15) !important;
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.2) !important;
+        }
+        
+        .security-dashboard .dashboard-header {
+            border-bottom: 1px solid var(--border-color) !important;
+            padding-bottom: 1rem !important;
+            margin-bottom: 1.5rem !important;
+        }
+        
+        .security-dashboard h6 {
+            color: var(--text-primary) !important;
+            font-weight: 600 !important;
+            margin: 0 !important;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .security-dashboard .badge {
+            background: var(--neon-success) !important;
+            color: white !important;
+            font-weight: 500 !important;
+            padding: 0.35em 0.8em !important;
+            font-size: 0.8rem !important;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            border: none;
+            box-shadow: 0 0 10px rgba(74, 222, 128, 0.3);
+        }
+        
+        .security-metrics {
+            margin-bottom: 1.5rem;
+        }
+        
+        .metric-card {
+            background: var(--card-bg) !important;
+            border: 1px solid var(--border-color) !important;
+            border-radius: var(--radius) !important;
+            padding: 1.25rem !important;
+            height: 100%;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        [data-theme="dark"] .metric-card {
+            background: rgba(45, 48, 71, 0.6) !important;
+            border: 1px solid rgba(138, 146, 255, 0.1) !important;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1) !important;
+        }
+        
+        .metric-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1) !important;
+        }
+        
+        [data-theme="dark"] .metric-card:hover {
+            box-shadow: 0 10px 25px rgba(138, 146, 255, 0.2) !important;
+            border-color: rgba(138, 146, 255, 0.3) !important;
+        }
+        
+        .metric-icon {
+            width: 2.75rem;
+            height: 2.75rem;
+            border-radius: 0.75rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.25rem;
+            margin-bottom: 1rem;
+            transition: all 0.3s ease;
+        }
+        
+        .metric-card:hover .metric-icon {
+            transform: scale(1.1);
+        }
+        
+        .metric-icon.bg-success-subtle {
+            background: var(--success-light) !important;
+            color: var(--success) !important;
+            box-shadow: 0 4px 15px rgba(74, 222, 128, 0.2);
+        }
+        
+        .metric-icon.bg-primary-subtle {
+            background: var(--primary-light) !important;
+            color: var(--primary) !important;
+            box-shadow: 0 4px 15px rgba(138, 146, 255, 0.2);
+        }
+        
+        .metric-icon.bg-warning-subtle {
+            background: var(--warning-light) !important;
+            color: var(--warning) !important;
+            box-shadow: 0 4px 15px rgba(250, 204, 21, 0.2);
+        }
+        
+        .metric-icon.bg-info-subtle {
+            background: var(--info-light) !important;
+            color: var(--info) !important;
+            box-shadow: 0 4px 15px rgba(96, 165, 250, 0.2);
+        }
+        
+        .metric-number {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--primary) !important;
+            margin: 0 0 0.25rem 0;
+            line-height: 1.2;
+            letter-spacing: -0.5px;
+        }
+
+        [data-theme="dark"] .metric-number {
+            background: var(--neon-primary);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        
+        .metric-label {
+            font-size: 0.875rem;
+            color: var(--text-secondary);
+            margin: 0;
+            opacity: 0.9;
+            font-weight: 500;
+        }
+        
+        .scan-progress {
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius);
+            padding: 1.25rem;
+            margin-top: 1.5rem;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        [data-theme="dark"] .scan-progress {
+            background: rgba(45, 48, 71, 0.6) !important;
+            border: 1px solid rgba(138, 146, 255, 0.1) !important;
+        }
+        
+        .scan-progress .progress {
+            background-color: var(--border-color);
+            height: 0.5rem;
+            border-radius: 1rem;
+            overflow: hidden;
+            box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.1);
+        }
+        
+        .scan-progress .progress-bar {
+            background: var(--neon-success);
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .scan-progress .progress-bar::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(90deg, 
+                rgba(255,255,255,0) 0%, 
+                rgba(255,255,255,0.3) 50%, 
+                rgba(255,255,255,0) 100%);
+            animation: progressShine 2s infinite;
+        }
+        
+        .scan-progress .small {
+            color: var(--text-secondary);
+            font-weight: 500;
+            margin-bottom: 0.75rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .scan-progress .text-success {
+            color: var(--success) !important;
+            font-weight: 600;
+            text-shadow: 0 0 10px rgba(74, 222, 128, 0.3);
+        }
+        
+        /* Fix sign-in buttons to match Get Started button styling */
+        .hero-actions .btn.btn-outline-primary {
+            background: var(--primary) !important;
+            color: white !important;
+            border: none !important;
+            box-shadow: 0 4px 15px rgba(74, 66, 209, 0.3) !important;
+        }
+
+        .hero-actions .btn.btn-outline-primary:hover {
+            background: var(--primary-dark) !important;
+            transform: translateY(-2px) !important;
+            box-shadow: 0 6px 20px rgba(74, 66, 209, 0.4) !important;
+        }
+
+        .cta-section .btn.btn-outline-light {
+            background: rgba(255, 255, 255, 0.2) !important;
+            color: white !important;
+            border: 2px solid rgba(255, 255, 255, 0.3) !important;
+            backdrop-filter: blur(10px) !important;
+        }
+
+        .cta-section .btn.btn-outline-light:hover {
+            background: rgba(255, 255, 255, 0.3) !important;
+            border-color: rgba(255, 255, 255, 0.5) !important;
+            box-shadow: 0 6px 20px rgba(255, 255, 255, 0.2) !important;
+        }
+
+        /* Enhanced hero title with background box for maximum visibility */
+        .hero-title {
+            position: relative !important;
+            z-index: 10 !important;
+        }
+
+        .hero-title::before {
+            content: '';
+            position: absolute;
+            top: -1rem;
+            left: -1rem;
+            right: -1rem;
+            bottom: -1rem;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 1rem;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            z-index: -1;
+            backdrop-filter: blur(10px);
+        }
+
+        [data-theme="dark"] .hero-title::before {
+            background: rgba(15, 23, 42, 0.95);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(0, 240, 255, 0.2);
+        }
+
+        .hero-title {
+            color: var(--text-primary) !important;
+            font-weight: 900 !important;
+            font-size: 3.5rem !important;
+            line-height: 1.1 !important;
+            text-shadow: 0 4px 8px rgba(0, 0, 0, 0.1) !important;
+            margin-bottom: 2rem !important;
+            padding: 2rem !important;
+            border-radius: 1rem !important;
+            max-width: 100% !important;
+            box-sizing: border-box !important;
+        }
+
+        .hero-title .text-primary {
+            color: #4a42d1 !important;
+            text-shadow: 0 4px 12px rgba(74, 66, 209, 0.3) !important;
+            font-weight: 900 !important;
+            letter-spacing: -0.02em !important;
+        }
+
+        [data-theme="dark"] .hero-title {
+            color: #f8fafc !important;
+            text-shadow: 0 4px 12px rgba(0, 0, 0, 0.3) !important;
+        }
+
+        [data-theme="dark"] .hero-title .text-primary {
+            background: linear-gradient(135deg, #00f0ff 0%, #5773ff 50%, #b33ce8 100%) !important;
+            -webkit-background-clip: text !important;
+            -webkit-text-fill-color: transparent !important;
+            background-clip: text !important;
+            text-shadow: 0 0 30px rgba(0, 240, 255, 0.5) !important;
+            filter: drop-shadow(0 0 10px rgba(0, 240, 255, 0.3)) !important;
+        }
+
+        /* CTA Section with proper contrast */
+        .cta-section {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+            color: white !important;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .cta-section::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(135deg, rgba(102, 126, 234, 0.9) 0%, rgba(118, 75, 162, 0.9) 100%);
+            z-index: 1;
+        }
+
+        .cta-section .container {
+            position: relative;
+            z-index: 2;
+        }
+
+        [data-theme="dark"] .cta-section {
+            background: linear-gradient(135deg, #00f0ff 0%, #5773ff 50%, #b33ce8 100%) !important;
+        }
+
+        [data-theme="dark"] .cta-section::before {
+            background: linear-gradient(135deg, rgba(0, 240, 255, 0.2) 0%, rgba(87, 115, 255, 0.2) 50%, rgba(179, 60, 232, 0.2) 100%);
+        }
+
+        .cta-section h2,
+        .cta-section p,
+        .cta-section .lead {
+            color: white !important;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+        }
+
+        [data-theme="dark"] .cta-section h2,
+        [data-theme="dark"] .cta-section p,
+        [data-theme="dark"] .cta-section .lead {
+            color: #f8fafc !important;
+            text-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
+        }
+
+        /* Feature cards styling */
+        .feature-card {
+            background: var(--card-bg) !important;
+            border: 1px solid var(--border-color) !important;
+            border-radius: 1rem !important;
+            padding: 2rem !important;
+            height: 100% !important;
+            transition: all 0.3s ease !important;
+            margin-bottom: 1.5rem !important;
+            box-shadow: var(--card-shadow) !important;
+        }
+
+        .feature-card:hover {
+            transform: translateY(-5px) !important;
+            box-shadow: 0 1rem 2rem rgba(0, 0, 0, 0.15) !important;
+        }
+
+        [data-theme="dark"] .feature-card {
+            background: rgba(30, 41, 59, 0.8) !important;
+            border: 1px solid rgba(99, 102, 241, 0.2) !important;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3) !important;
+        }
+
+        [data-theme="dark"] .feature-card:hover {
+            transform: translateY(-5px) !important;
+            box-shadow: 0 10px 25px rgba(99, 102, 241, 0.3) !important;
+            border-color: rgba(99, 102, 241, 0.4) !important;
+        }
+
+        .feature-icon {
+            width: 4rem !important;
+            height: 4rem !important;
+            border-radius: 1rem !important;
+            display: flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            font-size: 1.5rem !important;
+            margin-bottom: 1.5rem !important;
+            transition: all 0.3s ease !important;
+        }
+
+        .feature-card:hover .feature-icon {
+            transform: scale(1.1) !important;
+        }
+
+        /* Enhanced hero section spacing */
+        .hero-section {
+            padding: 3rem 0 4rem 0 !important;
+        }
+
+        /* Ensure proper spacing between hero elements */
+        .hero-visual {
+            margin-top: 2rem;
+        }
+
+        @media (min-width: 992px) {
+            .hero-visual {
+                margin-top: 0;
+            }
+
+            .hero-section .row {
+                align-items: center;
+            }
+
+            /* Ensure hero title doesn't extend too far */
+            .hero-content {
+                padding-right: 2rem;
+            }
+        }
+
+        /* Mobile responsive improvements */
+        @media (max-width: 991px) {
+            .hero-title {
+                font-size: 2.5rem !important;
+                padding: 1.5rem !important;
+                margin-bottom: 1.5rem !important;
+            }
+
+            .hero-title::before {
+                left: -1rem !important;
+                right: -1rem !important;
+                top: -0.5rem !important;
+                bottom: -0.5rem !important;
+            }
+
+            .hero-section {
+                padding: 2rem 0 3rem 0 !important;
+            }
+
+            .hero-visual {
+                margin-top: 2rem;
+            }
+
+            .features-section {
+                padding: 3rem 0 2rem 0 !important;
+                margin-top: 1rem;
+            }
+
+            .feature-card {
+                margin-bottom: 1rem !important;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .hero-title {
+                font-size: 2rem !important;
+                padding: 1rem !important;
+            }
+
+            .hero-title::before {
+                left: -0.5rem !important;
+                right: -0.5rem !important;
+                top: -0.5rem !important;
+                bottom: -0.5rem !important;
+            }
+
+            .hero-actions .btn {
+                width: 100%;
+                margin: 0.25rem 0 !important;
+            }
+
+            .hero-stats {
+                margin: 1rem 0 !important;
+            }
+
+            .security-dashboard {
+                margin: 1rem 0 !important;
+                padding: 1rem !important;
+            }
+        }
+
+            .hero-title::before {
+                left: -1rem !important;
+                right: -1rem !important;
+                top: -0.5rem !important;
+                bottom: -0.5rem !important;
+            }
+
+            .hero-section {
+                padding: 2rem 0 3rem 0 !important;
+            }
+
+            .hero-visual {
+                margin-top: 2rem;
+            }
+
+            .features-section {
+                padding: 3rem 0 2rem 0 !important;
+                margin-top: 1rem;
+            }
+
+            .feature-card {
+                margin-bottom: 1rem !important;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .hero-title {
+                font-size: 2rem !important;
+                padding: 1rem !important;
+            }
+
+            .hero-title::before {
+                left: -0.5rem !important;
+                right: -0.5rem !important;
+                top: -0.5rem !important;
+                bottom: -0.5rem !important;
+            }
+
+            .hero-actions .btn {
+                width: 100%;
+                margin: 0.25rem 0 !important;
+            }
+
+            .hero-stats {
+                margin: 1rem 0 !important;
+            }
+
+            .security-dashboard {
+                margin: 1rem 0 !important;
+                padding: 1rem !important;
+            }
+        }
+
+        /* Hero actions spacing */
+        .hero-actions {
+            margin-top: 1.5rem;
+        }
+
+        .hero-actions .btn {
+            margin: 0.25rem;
+        }
+
+        /* Hero stats spacing */
+        .hero-stats {
+            margin: 1.5rem 0 2rem 0;
+        }
+
+        /* Dark theme dropdown and select styling */
+        [data-theme="dark"] select,
+        [data-theme="dark"] .form-select {
+            background-color: var(--card-bg) !important;
+            color: var(--text-primary) !important;
+            border-color: var(--border-color) !important;
+        }
+
+        [data-theme="dark"] select:focus,
+        [data-theme="dark"] .form-select:focus {
+            background-color: var(--card-bg) !important;
+            color: var(--text-primary) !important;
+            border-color: var(--primary) !important;
+            box-shadow: 0 0 0 0.2rem rgba(138, 146, 255, 0.25) !important;
+        }
+
+        [data-theme="dark"] option {
+            background-color: var(--card-bg) !important;
+            color: var(--text-primary) !important;
+        }
+
+        [data-theme="dark"] select option:checked {
+            background-color: var(--primary) !important;
+            color: white !important;
+        }
+
+        /* Ensure navbar dropdown appears above other content */
+        .navbar .dropdown-menu {
+            z-index: 1060 !important;
+        }
+    </style>
+    
+    <!-- Theme handled by static/js/theme.js -->
+    
+    {% block additional_css %}{% endblock %}
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-primary sticky-top">
+        <div class="container-fluid">
+            <a class="navbar-brand d-flex align-items-center" href="{{ url_for('index') }}">
+                <i class="fas fa-shield-alt me-2"></i>
+                <span class="fw-bold">RansomGuard Pro</span>
+            </a>
+            
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav me-auto">
+                    {% if current_user.is_authenticated %}
+                        <li class="nav-item">
+                            <a class="nav-link {{ 'active' if request.endpoint == 'dashboard' }}" href="{{ url_for('dashboard') }}">
+                                <i class="fas fa-tachometer-alt me-1"></i>Dashboard
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link {{ 'active' if request.endpoint in ['scan', 'scan_progress'] }}" href="{{ url_for('scan') }}">
+                                <i class="fas fa-search me-1"></i>Security Scan Center
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link {{ 'active' if request.endpoint == 'quarantine' }}" href="{{ url_for('quarantine') }}">
+                                <i class="fas fa-lock me-1"></i>Quarantine
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link {{ 'active' if request.endpoint == 'analytics' }}" href="{{ url_for('analytics') }}">
+                                <i class="fas fa-chart-bar me-1"></i>Analytics
+                            </a>
+                        </li>
+                    {% endif %}
+                </ul>
+                
+                <ul class="navbar-nav">
+                    <!-- Theme Toggle -->
+                    <li class="nav-item">
+                        <button class="btn btn-link nav-link theme-toggle" id="themeToggle" title="Toggle theme">
+                            <i class="fas fa-moon" id="themeIcon"></i>
+                        </button>
+                    </li>
+                    {% if current_user.is_authenticated %}
+                        <!-- User Dropdown -->
+                        <li class="nav-item dropdown">
+                            <a class="nav-link dropdown-toggle d-flex align-items-center" href="#" id="userDropdown" role="button" data-bs-toggle="dropdown">
+                                {% if current_user.avatar_path %}
+                                    <img src="{{ url_for('static', filename='uploads/avatars/' + current_user.avatar_path) }}"
+                                         alt="Profile Avatar" class="navbar-avatar me-2" style="width: 32px; height: 32px; border-radius: 50%; object-fit: cover;">
+                                {% else %}
+                                    {# Safely compute a single uppercase initial without Python-style slicing in a single expression #}
+                                    {% set _fullname = current_user.get_full_name() if current_user.get_full_name() else None %}
+                                    {% if _fullname %}
+                                        {% set _initial = _fullname[0] %}
+                                    {% else %}
+                                        {% set _initial = current_user.username[0] if current_user.username else 'U' %}
+                                    {% endif %}
+                                    <div class="navbar-avatar me-2" style="width: 32px; height: 32px; border-radius: 50%; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); display: flex; align-items: center; justify-content: center; color: white; font-weight: bold;">
+                                        {{ _initial|upper }}
+                                    </div>
+                                {% endif %}
+                                {{ current_user.get_full_name() }}
+                            </a>
+                            <ul class="dropdown-menu dropdown-menu-end">
+                                <li>
+                                    <a class="dropdown-item" href="{{ url_for('account') }}">
+                                        <i class="fas fa-cog me-2"></i>Account Settings
+                                    </a>
+                                </li>
+                                <li><hr class="dropdown-divider"></li>
+                                <li>
+                                    <a class="dropdown-item text-danger" href="{{ url_for('logout') }}">
+                                        <i class="fas fa-sign-out-alt me-2"></i>Logout
+                                    </a>
+                                </li>
+                            </ul>
+                        </li>
+                    {% else %}
+                        <li class="nav-item">
+                            <a class="nav-link" href="{{ url_for('login') }}">
+                                <i class="fas fa-sign-in-alt me-1"></i>Login
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="{{ url_for('register') }}">
+                                <i class="fas fa-user-plus me-1"></i>Register
+                            </a>
+                        </li>
+                    {% endif %}
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Flash Messages -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            <div class="container-fluid mt-3">
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ 'danger' if category == 'error' else 'success' if category == 'success' else 'info' }} alert-dismissible fade show" role="alert">
+                        <i class="fas fa-{{ 'exclamation-triangle' if category == 'error' else 'check-circle' if category == 'success' else 'info-circle' }} me-2"></i>
+                        {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                {% endfor %}
+            </div>
+        {% endif %}
+    {% endwith %}
+
+    <!-- Main Content -->
+    <main class="main-content">
+        {% block content %}{% endblock %}
+    </main>
+
+    <!-- Footer -->
+    <footer class="footer bg-light mt-5">
+        <div class="container py-4">
+            <div class="row">
+                <div class="col-md-6">
+                    <h6 class="text-primary fw-bold mb-3">
+                        <i class="fas fa-shield-alt me-2"></i>RansomGuard Pro
+                    </h6>
+                    <p class="text-muted small mb-0">
+                        Advanced ransomware detection and prevention platform powered by machine learning.
+                        Protecting your digital assets with cutting-edge threat analysis.
+                    </p>
+                </div>
+                <div class="col-md-3">
+                    <h6 class="fw-bold mb-3">Features</h6>
+                    <ul class="list-unstyled small">
+                        <li><i class="fas fa-check text-success me-2"></i>Real-time Scanning</li>
+                        <li><i class="fas fa-check text-success me-2"></i>ML-based Detection</li>
+                        <li><i class="fas fa-check text-success me-2"></i>Behavioral Analysis</li>
+                        <li><i class="fas fa-check text-success me-2"></i>Automatic Quarantine</li>
+                    </ul>
+                </div>
+                <div class="col-md-3">
+                    <h6 class="fw-bold mb-3">Security Status</h6>
+                    <div class="d-flex align-items-center mb-2">
+                        <div class="status-indicator bg-success me-2"></div>
+                        <small class="text-muted">System Protected</small>
+                    </div>
+                    <div class="d-flex align-items-center mb-2">
+                        <div class="status-indicator bg-primary me-2"></div>
+                        <small class="text-muted">Real-time Monitoring</small>
+                    </div>
+                    <small class="text-muted d-block mt-2">
+                        © 2025 RansomGuard Pro. All rights reserved.
+                    </small>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <!-- System Status Modal -->
+    <div class="modal fade" id="systemStatusModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">
+                        <i class="fas fa-desktop me-2"></i>System Status
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div id="systemStatusContent">
+                        <div class="text-center">
+                            <div class="spinner-border text-primary" role="status">
+                                <span class="visually-hidden">Loading...</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <!-- Custom JavaScript -->
+    <script src="{{ url_for('static', filename='js/theme.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+    
+    {% block additional_js %}{% endblock %}
+</body>
+</html>

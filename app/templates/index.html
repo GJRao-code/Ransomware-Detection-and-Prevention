@@ -1,0 +1,379 @@
+{% extends "base.html" %}
+
+{% block title %}Welcome - Ransomware Detection Platform{% endblock %}
+
+{% block content %}
+<div class="hero-section">
+    <div class="container">
+        <div class="row align-items-center min-vh-100">
+            <div class="col-lg-6">
+                <div class="hero-content mb-5">
+                    <div class="hero-badge mb-4">
+                        <i class="fas fa-shield-alt"></i>
+                        Advanced Threat Protection
+                    </div>
+                    
+                    <h1 class="hero-title display-3 fw-bold mb-4">
+                        Protect Your Digital Assets with
+                        <span class="text-primary">RansomGuard Pro</span>
+                    </h1>
+                    
+                    <p class="hero-subtitle lead mb-4">
+                        Next-generation ransomware detection powered by machine learning,
+                        behavioral analysis, and real-time threat intelligence.
+                        Stay one step ahead of cybercriminals.
+                    </p>
+
+                    <div class="hero-actions d-flex flex-wrap gap-3">
+                        {% if not current_user.is_authenticated %}
+                            <a href="{{ url_for('register') }}" class="btn btn-primary btn-lg px-4">
+                                <i class="fas fa-rocket me-2"></i>Get Started Free
+                            </a>
+                            <a href="{{ url_for('login') }}" class="btn btn-outline-primary btn-lg px-4">
+                                <i class="fas fa-sign-in-alt me-2"></i>Sign In
+                            </a>
+                        {% else %}
+                            <a href="{{ url_for('dashboard') }}" class="btn btn-primary btn-lg px-4">
+                                <i class="fas fa-tachometer-alt me-2"></i>Go to Dashboard
+                            </a>
+                            <a href="{{ url_for('scan') }}" class="btn btn-success btn-lg px-4">
+                                <i class="fas fa-search me-2"></i>Start Scan
+                            </a>
+                            <a href="{{ url_for('ml_metrics') }}" class="btn btn-info btn-lg px-4">
+                                <i class="fas fa-chart-bar me-2"></i>ML Model Metrics
+                            </a>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-lg-6">
+                <div class="hero-visual">
+                    <div class="security-dashboard p-4 bg-white rounded shadow" style="min-height: 400px;">
+                        <div class="dashboard-header">
+                            <div class="d-flex justify-content-between align-items-center mb-4">
+                                <h5 class="mb-0 fw-bold"><i class="fas fa-shield-alt text-success me-2"></i>System Protected</h5>
+                                <span class="badge bg-success px-3 py-2">SECURE</span>
+                            </div>
+                        </div>
+                        
+                        <div class="row g-4">
+                            <div class="col-12">
+                                <div class="security-metrics">
+                                    <div class="row g-4">
+                                        <div class="col-6">
+                                            <div class="metric-card bg-light rounded p-4">
+                                                <div class="metric-content text-center">
+                                                    <div class="metric-number h3 fw-bold mb-2">0</div>
+                                                    <div class="metric-label h6 text-muted">Active Threats</div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="col-6">
+                                            <div class="metric-card bg-light rounded p-4">
+                                                <div class="metric-content text-center">
+                                                    <div class="metric-number h3 fw-bold mb-2">1.2M</div>
+                                                    <div class="metric-label h6 text-muted">Files Scanned</div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="col-6">
+                                            <div class="metric-card bg-light rounded p-4">
+                                                <div class="metric-content text-center">
+                                                    <div class="metric-number h3 fw-bold mb-2">12</div>
+                                                    <div class="metric-label h6 text-muted">Quarantined</div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="col-6">
+                                            <div class="metric-card bg-light rounded p-4">
+                                                <div class="metric-content text-center">
+                                                    <div class="metric-number h3 fw-bold mb-2">99.8%</div>
+                                                    <div class="metric-label h6 text-muted">Accuracy</div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="scan-progress mt-4">
+                                    <div class="d-flex justify-content-between align-items-center mb-2">
+                                        <span class="small">Real-time Protection</span>
+                                        <span class="small text-success">Active</span>
+                                    </div>
+                                    <div class="progress" style="height: 8px;">
+                                        <div class="progress-bar bg-success progress-bar-striped progress-bar-animated" 
+                                             role="progressbar" style="width: 100%"></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Features Section -->
+<section class="features-section py-5">
+    <div class="container">
+        <div class="row">
+            <div class="col-lg-8 mx-auto text-center mb-5">
+                <h2 class="display-5 fw-bold mb-3">Advanced Protection Features</h2>
+                <p class="lead text-muted">
+                    Comprehensive ransomware protection using cutting-edge technology
+                    and machine learning algorithms.
+                </p>
+            </div>
+        </div>
+        
+        <div class="row g-4">
+            <div class="col-md-6 col-lg-4">
+                <div class="feature-card h-100">
+                    <div class="feature-icon bg-primary-subtle text-primary">
+                        <i class="fas fa-brain"></i>
+                    </div>
+                    <h5 class="fw-bold">Machine Learning Detection</h5>
+                    <p class="text-muted">
+                        Advanced ML algorithms including Random Forest and XGBoost
+                        for accurate threat identification with minimal false positives.
+                    </p>
+                </div>
+            </div>
+            
+            <div class="col-md-6 col-lg-4">
+                <div class="feature-card h-100">
+                    <div class="feature-icon bg-success-subtle text-success">
+                        <i class="fas fa-eye"></i>
+                    </div>
+                    <h5 class="fw-bold">Behavioral Analysis</h5>
+                    <p class="text-muted">
+                        Real-time monitoring of file system activities, process behavior,
+                        and network connections to detect suspicious patterns.
+                    </p>
+                </div>
+            </div>
+            
+            <div class="col-md-6 col-lg-4">
+                <div class="feature-card h-100">
+                    <div class="feature-icon bg-warning-subtle text-warning">
+                        <i class="fas fa-fingerprint"></i>
+                    </div>
+                    <h5 class="fw-bold">Entropy Analysis</h5>
+                    <p class="text-muted">
+                        Sophisticated entropy analysis to detect file encryption
+                        attempts and identify ransomware before it spreads.
+                    </p>
+                </div>
+            </div>
+            
+            <div class="col-md-6 col-lg-4">
+                <div class="feature-card h-100">
+                    <div class="feature-icon bg-danger-subtle text-danger">
+                        <i class="fas fa-virus-slash"></i>
+                    </div>
+                    <h5 class="fw-bold">Signature Detection</h5>
+                    <p class="text-muted">
+                        Comprehensive database of known malware signatures
+                        and threat indicators for instant threat recognition.
+                    </p>
+                </div>
+            </div>
+            
+            <div class="col-md-6 col-lg-4">
+                <div class="feature-card h-100">
+                    <div class="feature-icon bg-info-subtle text-info">
+                        <i class="fas fa-lock"></i>
+                    </div>
+                    <h5 class="fw-bold">Auto Quarantine</h5>
+                    <p class="text-muted">
+                        Automatic isolation of detected threats with secure
+                        quarantine management and recovery options.
+                    </p>
+                </div>
+            </div>
+            
+            <div class="col-md-6 col-lg-4">
+                <div class="feature-card h-100">
+                    <div class="feature-icon bg-secondary-subtle text-secondary">
+                        <i class="fas fa-shield-alt"></i>
+                    </div>
+                    <h5 class="fw-bold">Honeypot Defense</h5>
+                    <p class="text-muted">
+                        Strategic deployment of honeypot files to detect
+                        ransomware activity early in the attack chain.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Security Stats Section -->
+<section class="stats-section bg-primary text-white py-5">
+    <div class="container">
+        <div class="row text-center g-4">
+            <div class="col-md-3">
+                <div class="stat-item">
+                    <div class="stat-number display-4 fw-bold">2.5M+</div>
+                    <div class="stat-label">Files Analyzed</div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="stat-item">
+                    <div class="stat-number display-4 fw-bold">15,000+</div>
+                    <div class="stat-label">Threats Blocked</div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="stat-item">
+                    <div class="stat-number display-4 fw-bold">99.8%</div>
+                    <div class="stat-label">Detection Rate</div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="stat-item">
+                    <div class="stat-number display-4 fw-bold">24/7</div>
+                    <div class="stat-label">Protection</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- How It Works Section -->
+<section class="how-it-works py-5">
+    <div class="container">
+        <div class="row">
+            <div class="col-lg-8 mx-auto text-center mb-5">
+                <h2 class="display-5 fw-bold mb-3">How RansomGuard Works</h2>
+                <p class="lead text-muted">
+                    Multi-layered protection with advanced threat detection and response.
+                </p>
+            </div>
+        </div>
+        
+        <div class="row g-4">
+            <div class="col-md-4">
+                <div class="process-step text-center">
+                    <div class="step-number">1</div>
+                    <div class="step-icon">
+                        <i class="fas fa-search"></i>
+                    </div>
+                    <h5 class="fw-bold">Continuous Scanning</h5>
+                    <p class="text-muted">
+                        Real-time monitoring of file system activities,
+                        process executions, and network communications.
+                    </p>
+                </div>
+            </div>
+            
+            <div class="col-md-4">
+                <div class="process-step text-center">
+                    <div class="step-number">2</div>
+                    <div class="step-icon">
+                        <i class="fas fa-brain"></i>
+                    </div>
+                    <h5 class="fw-bold">AI Analysis</h5>
+                    <p class="text-muted">
+                        Machine learning algorithms analyze patterns,
+                        behavior, and characteristics to identify threats.
+                    </p>
+                </div>
+            </div>
+            
+            <div class="col-md-4">
+                <div class="process-step text-center">
+                    <div class="step-number">3</div>
+                    <div class="step-icon">
+                        <i class="fas fa-shield-alt"></i>
+                    </div>
+                    <h5 class="fw-bold">Instant Protection</h5>
+                    <p class="text-muted">
+                        Immediate quarantine and containment of detected
+                        threats with detailed forensic analysis.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+{% if not current_user.is_authenticated %}
+<!-- CTA Section -->
+<section class="cta-section bg-gradient text-white py-5">
+    <div class="container text-center">
+        <div class="row">
+            <div class="col-lg-8 mx-auto">
+                <h2 class="display-5 fw-bold mb-3">Ready to Secure Your Systems?</h2>
+                <p class="lead mb-4">
+                    Join thousands of users protecting their digital assets with RansomGuard Pro.
+                    Start your free trial today and experience advanced ransomware protection.
+                </p>
+                <div class="d-flex justify-content-center gap-3 flex-wrap">
+                    <a href="{{ url_for('register') }}" class="btn btn-light btn-lg px-4">
+                        <i class="fas fa-rocket me-2"></i>Start Free Trial
+                    </a>
+                    <a href="{{ url_for('login') }}" class="btn btn-outline-light btn-lg px-4">
+                        <i class="fas fa-sign-in-alt me-2"></i>Sign In
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+{% endif %}
+{% endblock %}
+
+{% block additional_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Animate counter numbers
+    const counters = document.querySelectorAll('.stat-number');
+    
+    const animateCounter = (counter) => {
+        const target = counter.textContent;
+        const numericTarget = parseFloat(target.replace(/[^\d.]/g, ''));
+        const suffix = target.replace(/[\d.]/g, '');
+        
+        let current = 0;
+        const increment = numericTarget / 50;
+        
+        const updateCounter = () => {
+            if (current < numericTarget) {
+                current += increment;
+                if (suffix.includes('%')) {
+                    counter.textContent = current.toFixed(1) + '%';
+                } else if (suffix.includes('M')) {
+                    counter.textContent = (current / 1000000).toFixed(1) + 'M+';
+                } else if (suffix.includes('K')) {
+                    counter.textContent = Math.floor(current / 1000) + 'K+';
+                } else {
+                    counter.textContent = Math.floor(current) + suffix;
+                }
+                requestAnimationFrame(updateCounter);
+            } else {
+                counter.textContent = target;
+            }
+        };
+        
+        updateCounter();
+    };
+    
+    // Intersection Observer for counter animation
+    const observer = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+            if (entry.isIntersecting) {
+                animateCounter(entry.target);
+                observer.unobserve(entry.target);
+            }
+        });
+    });
+    
+    counters.forEach(counter => {
+        observer.observe(counter);
+    });
+});
+</script>
+{% endblock %}

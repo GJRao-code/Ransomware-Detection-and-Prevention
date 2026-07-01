@@ -1,0 +1,13 @@
+SECURITY ALERT - {{ app_name }}
+
+Hello {{ username }},
+
+We've detected suspicious activity on your account:
+
+{{ alert_details }}
+
+If you did not perform this action, please secure your account immediately by changing your password.
+
+For security reasons, this is an automated message. Please do not reply to this email.
+
+© {{ current_year }} {{ app_name }}. All rights reserved.

@@ -1,0 +1,291 @@
+{% extends "base.html" %}
+
+{% block title %}Register - RansomGuard Pro{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row justify-content-center min-vh-100 align-items-center py-5">
+        <div class="col-md-8 col-lg-6">
+            <div class="auth-card card shadow-lg border-0">
+                <div class="card-body p-5">
+                    <div class="text-center mb-4">
+                        <div class="auth-logo mb-3">
+                            <i class="fas fa-shield-alt text-primary"></i>
+                        </div>
+                        <h2 class="fw-bold">Create Account</h2>
+                        <p class="text-muted">Join RansomGuard Pro for advanced protection</p>
+                    </div>
+
+                    <form method="POST" class="needs-validation" novalidate>
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="first_name" class="form-label">First Name</label>
+                                <div class="input-group">
+                                    <span class="input-group-text">
+                                        <i class="fas fa-user"></i>
+                                    </span>
+                                    <input type="text" class="form-control" id="first_name" name="first_name" 
+                                           placeholder="First name">
+                                </div>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="last_name" class="form-label">Last Name</label>
+                                <div class="input-group">
+                                    <span class="input-group-text">
+                                        <i class="fas fa-user"></i>
+                                    </span>
+                                    <input type="text" class="form-control" id="last_name" name="last_name" 
+                                           placeholder="Last name">
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="username" class="form-label">Username *</label>
+                            <div class="input-group">
+                                <span class="input-group-text">
+                                    <i class="fas fa-at"></i>
+                                </span>
+                                <input type="text" class="form-control" id="username" name="username" 
+                                       placeholder="Choose a username" required>
+                                <div class="invalid-feedback">
+                                    Please choose a username.
+                                </div>
+                            </div>
+                            <div class="form-text">Username must be unique and contain only letters, numbers, and underscores.</div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="email" class="form-label">Email Address *</label>
+                            <div class="input-group">
+                                <span class="input-group-text">
+                                    <i class="fas fa-envelope"></i>
+                                </span>
+                                <input type="email" class="form-control" id="email" name="email" 
+                                       placeholder="your.email@example.com" required>
+                                <div class="invalid-feedback">
+                                    Please provide a valid email address.
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="password" class="form-label">Password *</label>
+                                <div class="input-group">
+                                    <span class="input-group-text">
+                                        <i class="fas fa-lock"></i>
+                                    </span>
+                                    <input type="password" class="form-control" id="password" name="password" 
+                                           placeholder="Create password" required minlength="8">
+                                    <button class="btn btn-outline-secondary" type="button" id="togglePassword">
+                                        <i class="fas fa-eye"></i>
+                                    </button>
+                                    <div class="invalid-feedback">
+                                        Password must be at least 8 characters long.
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="confirm_password" class="form-label">Confirm Password *</label>
+                                <div class="input-group">
+                                    <span class="input-group-text">
+                                        <i class="fas fa-lock"></i>
+                                    </span>
+                                    <input type="password" class="form-control" id="confirm_password" name="confirm_password" 
+                                           placeholder="Confirm password" required>
+                                    <div class="invalid-feedback">
+                                        Passwords must match.
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Password Strength Indicator -->
+                        <div class="mb-3">
+                            <div class="password-strength">
+                                <div class="d-flex justify-content-between align-items-center mb-1">
+                                    <small class="text-muted">Password Strength:</small>
+                                    <small id="strengthText" class="text-muted">Weak</small>
+                                </div>
+                                <div class="progress" style="height: 4px;">
+                                    <div id="strengthBar" class="progress-bar bg-danger" role="progressbar" style="width: 0%"></div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Terms and Privacy -->
+                        <div class="mb-3">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="terms" required>
+                                <label class="form-check-label" for="terms">
+                                    I agree to the <a href="#" class="text-primary">Terms of Service</a> 
+                                    and <a href="#" class="text-primary">Privacy Policy</a> *
+                                </label>
+                                <div class="invalid-feedback">
+                                    You must agree to the terms and conditions.
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="d-grid">
+                            <button type="submit" class="btn btn-primary btn-lg">
+                                <i class="fas fa-user-plus me-2"></i>
+                                Create Account
+                            </button>
+                        </div>
+                    </form>
+
+                    <hr class="my-4">
+
+                    <div class="text-center">
+                        <p class="mb-0">Already have an account? 
+                            <a href="{{ url_for('login') }}" class="text-primary fw-semibold text-decoration-none">
+                                Sign in here
+                            </a>
+                        </p>
+                    </div>
+
+                    <!-- Security Features -->
+                    <div class="security-features mt-4">
+                        <h6 class="fw-bold mb-3">
+                            <i class="fas fa-shield-alt text-success me-2"></i>
+                            Your Security is Our Priority
+                        </h6>
+                        <div class="row g-2">
+                            <div class="col-6">
+                                <div class="feature-item d-flex align-items-center">
+                                    <i class="fas fa-check-circle text-success me-2"></i>
+                                    <small>Encrypted Storage</small>
+                                </div>
+                            </div>
+                            <div class="col-6">
+                                <div class="feature-item d-flex align-items-center">
+                                    <i class="fas fa-check-circle text-success me-2"></i>
+                                    <small>Secure Authentication</small>
+                                </div>
+                            </div>
+                            <div class="col-6">
+                                <div class="feature-item d-flex align-items-center">
+                                    <i class="fas fa-check-circle text-success me-2"></i>
+                                    <small>Privacy Protection</small>
+                                </div>
+                            </div>
+                            <div class="col-6">
+                                <div class="feature-item d-flex align-items-center">
+                                    <i class="fas fa-check-circle text-success me-2"></i>
+                                    <small>24/7 Monitoring</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block additional_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const passwordInput = document.getElementById('password');
+    const confirmPasswordInput = document.getElementById('confirm_password');
+    const strengthBar = document.getElementById('strengthBar');
+    const strengthText = document.getElementById('strengthText');
+    const togglePassword = document.getElementById('togglePassword');
+
+    // Password strength checker
+    function checkPasswordStrength(password) {
+        let strength = 0;
+        let feedback = [];
+
+        if (password.length >= 8) strength += 1;
+        else feedback.push('At least 8 characters');
+
+        if (/[a-z]/.test(password)) strength += 1;
+        else feedback.push('Lowercase letter');
+
+        if (/[A-Z]/.test(password)) strength += 1;
+        else feedback.push('Uppercase letter');
+
+        if (/[0-9]/.test(password)) strength += 1;
+        else feedback.push('Number');
+
+        if (/[^A-Za-z0-9]/.test(password)) strength += 1;
+        else feedback.push('Special character');
+
+        return { strength, feedback };
+    }
+
+    // Update password strength indicator
+    function updatePasswordStrength() {
+        const password = passwordInput.value;
+        const result = checkPasswordStrength(password);
+        
+        const percentage = (result.strength / 5) * 100;
+        strengthBar.style.width = percentage + '%';
+        
+        if (result.strength <= 2) {
+            strengthBar.className = 'progress-bar bg-danger';
+            strengthText.textContent = 'Weak';
+            strengthText.className = 'text-danger';
+        } else if (result.strength === 3) {
+            strengthBar.className = 'progress-bar bg-warning';
+            strengthText.textContent = 'Fair';
+            strengthText.className = 'text-warning';
+        } else if (result.strength === 4) {
+            strengthBar.className = 'progress-bar bg-info';
+            strengthText.textContent = 'Good';
+            strengthText.className = 'text-info';
+        } else {
+            strengthBar.className = 'progress-bar bg-success';
+            strengthText.textContent = 'Strong';
+            strengthText.className = 'text-success';
+        }
+    }
+
+    // Password matching validation
+    function validatePasswordMatch() {
+        if (confirmPasswordInput.value && passwordInput.value !== confirmPasswordInput.value) {
+            confirmPasswordInput.setCustomValidity('Passwords do not match');
+        } else {
+            confirmPasswordInput.setCustomValidity('');
+        }
+    }
+
+    // Event listeners
+    passwordInput.addEventListener('input', function() {
+        updatePasswordStrength();
+        validatePasswordMatch();
+    });
+
+    confirmPasswordInput.addEventListener('input', validatePasswordMatch);
+
+    // Password toggle
+    togglePassword.addEventListener('click', function() {
+        const type = passwordInput.getAttribute('type') === 'password' ? 'text' : 'password';
+        passwordInput.setAttribute('type', type);
+        
+        const icon = this.querySelector('i');
+        icon.classList.toggle('fa-eye');
+        icon.classList.toggle('fa-eye-slash');
+    });
+
+    // Form validation
+    const form = document.querySelector('.needs-validation');
+    form.addEventListener('submit', function(event) {
+        if (!form.checkValidity()) {
+            event.preventDefault();
+            event.stopPropagation();
+        } else {
+            // Add loading state
+            const submitButton = form.querySelector('button[type="submit"]');
+            submitButton.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Creating Account...';
+            submitButton.disabled = true;
+        }
+        form.classList.add('was-validated');
+    }, false);
+});
+</script>
+{% endblock %}

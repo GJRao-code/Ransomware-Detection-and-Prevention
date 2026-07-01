@@ -1,0 +1,26 @@
+{
+  "dataset_name": "Ransomware Detection 2025",
+  "total_samples": 50000,
+  "features": 25,
+  "threat_types": [
+    "benign",
+    "malware",
+    "ransomware",
+    "suspicious"
+  ],
+  "ransomware_families": [
+    "LockBit",
+    "BlackCat",
+    "RansomHub",
+    "Play",
+    "Cl0p",
+    "BlackBasta",
+    "RansomEXX",
+    "Conti",
+    "REvil",
+    "DarkSide"
+  ],
+  "creation_date": "2025-10-26T11:50:29.528724",
+  "source": "Generated based on RanSMAP 2024 and RanSAP research datasets",
+  "description": "Comprehensive ransomware detection dataset with 2025 ransomware family characteristics"
+}

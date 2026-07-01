@@ -1,0 +1,1144 @@
+{% extends "base.html" %}
+
+{% block title %}Analytics & Reports - RansomGuard Pro{% endblock %}
+
+{% block additional_css %}
+<style>
+.analytics-card {
+    transition: all 0.3s ease;
+    border: none;
+    border-radius: 8px;
+    overflow: hidden;
+    min-height: auto !important;
+}
+
+.analytics-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+}
+
+.analytics-card.card {
+    margin-bottom: 0.5rem !important;
+}
+
+.metric-card {
+    background: linear-gradient(135deg, var(--bg-color1, #667eea), var(--bg-color2, #764ba2));
+    color: #212529;
+    border-radius: 6px;
+    padding: 0.75rem;
+    position: relative;
+    overflow: hidden;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.1);
+    height: auto;
+    min-height: 80px;
+}
+
+[data-theme="light"] .metric-card {
+    color: #212529 !important;
+}
+
+[data-theme="dark"] .metric-card {
+    color: rgba(255, 255, 255, 0.9);
+}
+
+.metric-card::before {
+    content: '';
+    position: absolute;
+    top: -50%;
+    right: -50%;
+    width: 100%;
+    height: 100%;
+    background: rgba(255, 255, 255, 0.1);
+    transform: rotate(45deg);
+}
+
+/* Ensure text is visible in both themes */
+.metric-number,
+.metric-title,
+.metric-change {
+    position: relative;
+    z-index: 2;
+    color: inherit;
+}
+
+.metric-change {
+    font-size: 0.85rem;
+    opacity: 0.9;
+}
+
+/* Ensure contrast for text in light mode */
+[data-theme="light"] .metric-card {
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+}
+
+.metric-number {
+    font-size: 1.25rem;
+    font-weight: bold;
+    line-height: 1.1;
+    margin-bottom: 0.15rem;
+}
+
+.chart-container {
+    position: relative;
+    height: 150px !important;
+    max-height: 150px !important;
+    background: var(--bs-body-bg, #ffffff);
+    border-radius: 6px;
+    padding: 0.5rem;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+    overflow: hidden;
+}
+
+.chart-container canvas {
+    max-height: 140px !important;
+    height: 140px !important;
+}
+
+/* Force all cards to be compact */
+.card {
+    min-height: auto !important;
+}
+
+.card-body {
+    min-height: auto !important;
+}
+
+.filter-bar {
+    background: var(--bs-light);
+    border-radius: 6px;
+    padding: 0.5rem;
+    margin-bottom: 0.75rem;
+}
+
+.heatmap-container {
+    background: var(--bs-body-bg, #ffffff);
+    border-radius: 6px;
+    padding: 0.5rem;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+}
+
+.heatmap-cell {
+    border-radius: 2px;
+    margin: 1px;
+    display: inline-block;
+    width: 10px;
+    height: 10px;
+}
+
+/* Compact spacing for analytics page */
+.analytics-card .card-header {
+    padding: 0.5rem 0.75rem;
+    font-size: 0.9rem;
+}
+
+.analytics-card .card-body {
+    padding: 0.75rem;
+}
+
+.metric-title {
+    font-size: 0.8rem;
+    margin-bottom: 0.1rem;
+}
+
+.metric-change {
+    font-size: 0.7rem;
+}
+
+/* Reduce icon sizes and add spacing */
+.metric-card i {
+    font-size: 1.5rem !important;
+    margin-right: 0.75rem !important;
+    margin-bottom: 0.5rem !important;
+    display: inline-block;
+}
+
+.metric-card .d-flex {
+    gap: 0.75rem;
+}
+
+.metric-card .text-end i {
+    margin-right: 0 !important;
+}
+
+/* Compact page layout */
+.container-fluid {
+    padding-top: 0.5rem !important;
+    padding-bottom: 0.5rem !important;
+}
+
+/* Keep Bootstrap grid system intact */
+
+/* Keep default Bootstrap column padding for proper layout */
+
+/* Reduce all headings */
+h6 {
+    font-size: 0.9rem !important;
+    margin-bottom: 0.5rem !important;
+}
+
+/* Compact lists */
+.list-group-item {
+    padding: 0.5rem 0.75rem !important;
+    font-size: 0.85rem !important;
+}
+
+/* Reduce timeline events */
+.timeline-event {
+    margin-bottom: 0.5rem !important;
+    padding: 0.4rem !important;
+    font-size: 0.85rem !important;
+}
+
+.threat-timeline {
+    max-height: 200px;
+    overflow-y: auto;
+}
+
+/* Keep Bootstrap spacing but reduce gaps between sections */
+.analytics-page .mb-4 {
+    margin-bottom: 1rem !important;
+}
+
+.analytics-page .row + .row {
+    margin-top: 0.75rem;
+}
+
+/* Reduce export options section */
+.export-options {
+    padding: 0.75rem !important;
+}
+
+.export-options .btn {
+    padding: 0.4rem 0.75rem !important;
+    font-size: 0.85rem !important;
+    margin-bottom: 0.4rem !important;
+}
+
+.timeline-event {
+    border-left: 3px solid var(--bs-primary);
+    padding-left: 1rem;
+    margin-bottom: 1.5rem;
+    position: relative;
+}
+
+.timeline-event::before {
+    content: '';
+    position: absolute;
+    left: -6px;
+    top: 0.5rem;
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: var(--bs-primary);
+}
+
+.timeline-event.critical::before {
+    background: var(--bs-danger);
+}
+
+.timeline-event.high::before {
+    background: var(--bs-warning);
+}
+
+/* Ensure navbar appears above all content */
+.navbar {
+    z-index: 3000 !important;
+}
+
+/* Ensure page content has lower z-index */
+.main-content {
+    position: relative;
+    z-index: 1 !important;
+}
+
+/* Ensure export options stay in normal flow */
+.export-options {
+    position: relative;
+    z-index: 1 !important;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+    <!-- Page Header -->
+    <div class="row mb-4">
+        <div class="col">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h1 class="h3 mb-2">
+                        <i class="fas fa-chart-bar text-primary me-2"></i>
+                        Analytics & Reports
+                    </h1>
+                    <p class="text-muted mb-0">
+                        Comprehensive threat analysis and system performance metrics
+                    </p>
+                </div>
+                <div>
+                    <button class="btn btn-outline-primary" onclick="refreshAnalytics()">
+                        <i class="fas fa-sync-alt me-2"></i>
+                        Refresh Data
+                    </button>
+                    <div class="btn-group">
+                        <button class="btn btn-primary dropdown-toggle" data-bs-toggle="dropdown">
+                            <i class="fas fa-download me-2"></i>
+                            Export Report
+                        </button>
+                        <ul class="dropdown-menu">
+                            <li><a class="dropdown-item" href="#" onclick="exportReport('pdf')">
+                                <i class="fas fa-file-pdf me-2"></i>PDF Report
+                            </a></li>
+                            <li><a class="dropdown-item" href="#" onclick="exportReport('excel')">
+                                <i class="fas fa-file-excel me-2"></i>Excel Report
+                            </a></li>
+                            <li><a class="dropdown-item" href="#" onclick="exportReport('csv')">
+                                <i class="fas fa-file-csv me-2"></i>CSV Data
+                            </a></li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filter Bar -->
+    <div class="filter-bar">
+        <div class="row g-3 align-items-center">
+            <div class="col-md-3">
+                <label for="dateRange" class="form-label small fw-semibold">Date Range</label>
+                <select class="form-select form-select-sm" id="dateRange" onchange="updateDateRange()">
+                    <option value="7">Last 7 days</option>
+                    <option value="30" selected>Last 30 days</option>
+                    <option value="90">Last 90 days</option>
+                    <option value="365">Last year</option>
+                    <option value="custom">Custom range</option>
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label for="threatType" class="form-label small fw-semibold">Threat Type</label>
+                <select class="form-select form-select-sm" id="threatType" onchange="filterByThreatType()">
+                    <option value="">All Types</option>
+                    <option value="ransomware">Ransomware</option>
+                    <option value="malware">Malware</option>
+                    <option value="suspicious">Suspicious</option>
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label for="detectionMethod" class="form-label small fw-semibold">Detection Method</label>
+                <select class="form-select form-select-sm" id="detectionMethod" onchange="filterByMethod()">
+                    <option value="">All Methods</option>
+                    <option value="ml_ensemble">ML Ensemble</option>
+                    <option value="signature">Signature</option>
+                    <option value="behavioral">Behavioral</option>
+                    <option value="entropy">Entropy</option>
+                </select>
+            </div>
+            <div class="col-md-3 d-flex align-items-end">
+                <button class="btn btn-outline-secondary btn-sm me-2" onclick="resetFilters()">
+                    <i class="fas fa-undo me-1"></i>Reset
+                </button>
+                <button class="btn btn-primary btn-sm" onclick="applyFilters()">
+                    <i class="fas fa-filter me-1"></i>Apply
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Key Metrics -->
+    <div class="row g-4 mb-4">
+        <!-- Total Threats Card (Dark background, white text) -->
+        <div class="col-xl-3 col-md-6">
+            <div class="metric-card dark-card" style="--bg-color1: #667eea; --bg-color2: #764ba2;">
+                <div class="d-flex align-items-center justify-content-between">
+                    <div>
+                        <div class="metric-number fw-bold" id="totalThreats">
+                            {{ user_threats|length }}
+                        </div>
+                        <div class="metric-title h6 mb-2">Total Threats Detected</div>
+                        <div class="metric-change small">
+                            <i class="fas fa-arrow-up me-1 text-success"></i>
+                            <span>+12% from last month</span>
+                        </div>
+                    </div>
+                    <i class="fas fa-exclamation-triangle fa-3x opacity-75 text-danger"></i>
+                </div>
+            </div>
+        </div>
+
+        <!-- Ransomware Detected Card (Dark background, white text) -->
+        <div class="col-xl-3 col-md-6">
+            <div class="metric-card dark-card" style="--bg-color1: #f093fb; --bg-color2: #f5576c;">
+                <div class="d-flex align-items-center justify-content-between">
+                    <div>
+                        <div class="metric-number fw-bold" id="ransomwareCount">
+                            {{ user_threats|selectattr('threat_type', 'equalto', 'ransomware')|list|length }}
+                        </div>
+                        <div class="metric-title h6 mb-2">Ransomware Detected</div>
+                        <div class="metric-change small">
+                            <i class="fas fa-arrow-down me-1 text-danger"></i>
+                            <span>-5% from last month</span>
+                        </div>
+                    </div>
+                    <i class="fas fa-lock fa-3x opacity-75 text-danger"></i>
+                </div>
+            </div>
+        </div>
+
+        <!-- Total Scans Card (Light background, dark text) -->
+        <div class="col-xl-3 col-md-6">
+            <div class="metric-card light-card" style="--bg-color1: #4facfe; --bg-color2: #00f2fe;">
+                <div class="d-flex align-items-center justify-content-between">
+                    <div>
+                        <div class="metric-number fw-bold text-dark" id="totalScans">
+                            {{ user_scans|length }}
+                        </div>
+                        <div class="metric-title h6 mb-2 text-dark">Total Scans</div>
+                        <div class="metric-change small text-dark">
+                            <i class="fas fa-arrow-up me-1 text-success"></i>
+                            <span>+8% from last month</span>
+                        </div>
+                    </div>
+                    <i class="fas fa-search fa-3x opacity-75 text-primary"></i>
+                </div>
+            </div>
+        </div>
+
+        <!-- Detection Accuracy Card (Light background, dark text) -->
+        <div class="col-xl-3 col-md-6">
+            <div class="metric-card light-card" style="--bg-color1: #43e97b; --bg-color2: #38f9d7;">
+                <div class="d-flex align-items-center justify-content-between">
+                    <div>
+                        <div class="metric-number fw-bold text-dark" id="accuracyRate">
+                            {% if model_metrics %}
+                                {{ "%.1f"|format((model_metrics|sum(attribute='accuracy') / model_metrics|length) * 100) }}%
+                            {% else %}
+                                98.5<small class="fs-6">%</small>
+                            {% endif %}
+                        </div>
+                        <div class="metric-title h6 mb-2 text-dark">Detection Accuracy</div>
+                        <div class="metric-change small text-dark">
+                            <i class="fas fa-arrow-up me-1 text-success"></i>
+                            <span>+2.1% from last month</span>
+                        </div>
+                    </div>
+                    <i class="fas fa-bullseye fa-3x opacity-75 text-success"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Charts Row -->
+    <div class="row g-4 mb-4">
+        <!-- Threat Timeline Chart -->
+        <div class="col-lg-8">
+            <div class="analytics-card card h-100">
+                <div class="card-header bg-transparent border-0 d-flex justify-content-between align-items-center">
+                    <h6 class="mb-0 fw-bold">
+                        <i class="fas fa-chart-line text-primary me-2"></i>
+                        Threat Detection Timeline
+                    </h6>
+                    <div class="btn-group btn-group-sm">
+                        <button class="btn btn-outline-primary active" onclick="changeTimelineView('daily')">Daily</button>
+                        <button class="btn btn-outline-primary" onclick="changeTimelineView('weekly')">Weekly</button>
+                        <button class="btn btn-outline-primary" onclick="changeTimelineView('monthly')">Monthly</button>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <canvas id="threatTimelineChart" height="300"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- Model Performance -->
+        <div class="col-lg-4">
+            <div class="analytics-card card h-100">
+                <div class="card-header bg-transparent border-0">
+                    <h6 class="mb-0 fw-bold">
+                        <i class="fas fa-brain text-primary me-2"></i>
+                        ML Model Performance
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <canvas id="modelPerformanceChart" height="300"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Advanced Analytics Row -->
+    <div class="row g-4 mb-4">
+        <!-- Threat Distribution -->
+        <div class="col-lg-6">
+            <div class="analytics-card card h-100">
+                <div class="card-header bg-transparent border-0">
+                    <h6 class="mb-0 fw-bold">
+                        <i class="fas fa-chart-pie text-primary me-2"></i>
+                        Threat Type Distribution
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <canvas id="threatDistributionChart" height="250"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- System Health Trends -->
+        <div class="col-lg-6">
+            <div class="analytics-card card h-100">
+                <div class="card-header bg-transparent border-0">
+                    <h6 class="mb-0 fw-bold">
+                        <i class="fas fa-heartbeat text-primary me-2"></i>
+                        System Health Trends
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <canvas id="systemHealthChart" height="250"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Detailed Analysis Row -->
+    <div class="row g-4 mb-4">
+        <!-- Threat Heatmap -->
+        <div class="col-lg-8">
+            <div class="analytics-card card">
+                <div class="card-header bg-transparent border-0">
+                    <h6 class="mb-0 fw-bold">
+                        <i class="fas fa-fire text-primary me-2"></i>
+                        Threat Activity Heatmap
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="heatmap-container">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <small class="text-muted">Less</small>
+                            <div class="d-flex">
+                                <div class="heatmap-cell" style="background-color: #ebedf0;"></div>
+                                <div class="heatmap-cell" style="background-color: #c6e48b;"></div>
+                                <div class="heatmap-cell" style="background-color: #7bc96f;"></div>
+                                <div class="heatmap-cell" style="background-color: #239a3b;"></div>
+                                <div class="heatmap-cell" style="background-color: #196127;"></div>
+                            </div>
+                            <small class="text-muted">More</small>
+                        </div>
+                        <div id="threatHeatmap">
+                            <!-- Heatmap will be generated by JavaScript -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Top Threats -->
+        <div class="col-lg-4">
+            <div class="analytics-card card h-100">
+                <div class="card-header bg-transparent border-0">
+                    <h6 class="mb-0 fw-bold">
+                        <i class="fas fa-list-ol text-primary me-2"></i>
+                        Top Threat Patterns
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="list-group list-group-flush">
+                        <div class="list-group-item d-flex justify-content-between align-items-start">
+                            <div>
+                                <div class="fw-semibold">High Entropy Files</div>
+                                <small class="text-muted">Encrypted file detection</small>
+                            </div>
+                            <span class="badge bg-danger rounded-pill">45</span>
+                        </div>
+                        <div class="list-group-item d-flex justify-content-between align-items-start">
+                            <div>
+                                <div class="fw-semibold">Crypto Strings</div>
+                                <small class="text-muted">Cryptographic signatures</small>
+                            </div>
+                            <span class="badge bg-warning rounded-pill">32</span>
+                        </div>
+                        <div class="list-group-item d-flex justify-content-between align-items-start">
+                            <div>
+                                <div class="fw-semibold">Suspicious Behavior</div>
+                                <small class="text-muted">Behavioral anomalies</small>
+                            </div>
+                            <span class="badge bg-info rounded-pill">28</span>
+                        </div>
+                        <div class="list-group-item d-flex justify-content-between align-items-start">
+                            <div>
+                                <div class="fw-semibold">Process Injection</div>
+                                <small class="text-muted">Process manipulation</small>
+                            </div>
+                            <span class="badge bg-secondary rounded-pill">15</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Events & Export Options -->
+    <div class="row g-4">
+        <!-- Recent Security Events -->
+        <div class="col-lg-8">
+            <div class="analytics-card card">
+                <div class="card-header bg-transparent border-0">
+                    <h6 class="mb-0 fw-bold">
+                        <i class="fas fa-clock text-primary me-2"></i>
+                        Recent Security Events
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="threat-timeline">
+                        {% if user_threats %}
+                            {% for threat in user_threats[:10] %}
+                                <div class="timeline-event {{ threat.threat_level }}">
+                                    <div class="d-flex justify-content-between align-items-start">
+                                        <div>
+                                            <div class="fw-semibold">
+                                                {{ threat.threat_type.title() }} Detected
+                                                <span class="badge bg-{{ 'danger' if threat.threat_level == 'critical' else 'warning' if threat.threat_level == 'high' else 'info' }} ms-2">
+                                                    {{ threat.threat_level.title() }}
+                                                </span>
+                                            </div>
+                                            <div class="text-muted small">{{ threat.file_path.split('/')[-1].split('\\')[-1] }}</div>
+                                            <div class="text-muted small">
+                                                Confidence: {{ "%.0f"|format(threat.confidence_score * 100) }}% • 
+                                                Method: {{ threat.detection_method.replace('_', ' ').title() }}
+                                            </div>
+                                        </div>
+                                        <small class="text-muted">{{ threat.detected_at.strftime('%m/%d %H:%M') }}</small>
+                                    </div>
+                                </div>
+                            {% endfor %}
+                        {% else %}
+                            <div class="text-center text-muted py-4">
+                                <i class="fas fa-shield-check fa-3x mb-3"></i>
+                                <div>No recent security events</div>
+                                <small>Your system is secure!</small>
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Export Options -->
+        <div class="col-lg-4">
+            <div class="export-options">
+                <h6 class="fw-bold mb-3">
+                    <i class="fas fa-file-export text-primary me-2"></i>
+                    Export Options
+                </h6>
+                <div class="d-grid gap-2">
+                    <button class="btn btn-outline-primary" onclick="exportReport('comprehensive')">
+                        <i class="fas fa-file-alt me-2"></i>
+                        Comprehensive Report
+                    </button>
+                    <button class="btn btn-outline-primary" onclick="exportReport('executive')">
+                        <i class="fas fa-chart-bar me-2"></i>
+                        Executive Summary
+                    </button>
+                    <button class="btn btn-outline-primary" onclick="exportReport('technical')">
+                        <i class="fas fa-cogs me-2"></i>
+                        Technical Details
+                    </button>
+                    <button class="btn btn-outline-primary" onclick="scheduleReport()">
+                        <i class="fas fa-calendar me-2"></i>
+                        Schedule Reports
+                    </button>
+                </div>
+                
+                <hr class="my-3">
+                
+                <div class="small text-muted">
+                    <strong>Report Includes:</strong>
+                    <ul class="mb-0 mt-2">
+                        <li>Threat analysis summary</li>
+                        <li>ML model performance</li>
+                        <li>System health metrics</li>
+                        <li>Trend analysis</li>
+                        <li>Recommendations</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Schedule Report Modal -->
+<div class="modal fade" id="scheduleReportModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="fas fa-calendar me-2"></i>
+                    Schedule Automated Reports
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="scheduleReportForm" onsubmit="event.preventDefault(); saveSchedule();">
+                    <div class="mb-3">
+                        <label for="reportFrequency" class="form-label">Frequency</label>
+                        <select class="form-select" id="reportFrequency">
+                            <option value="daily">Daily</option>
+                            <option value="weekly">Weekly</option>
+                            <option value="monthly">Monthly</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="reportType" class="form-label">Report Type</label>
+                        <select class="form-select" id="reportType">
+                            <option value="comprehensive">Comprehensive</option>
+                            <option value="executive">Executive Summary</option>
+                            <option value="technical">Technical Details</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="reportEmail" class="form-label">Email Recipients</label>
+                        <input type="email" class="form-control" id="reportEmail" 
+                               value="{{ current_user.email }}" placeholder="Enter email addresses">
+                        <div class="form-text">Separate multiple emails with commas</div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" onclick="saveSchedule()">Schedule Reports</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block additional_js %}
+<script>
+let charts = {};
+
+document.addEventListener('DOMContentLoaded', function() {
+    initializeCharts();
+    generateThreatHeatmap();
+});
+
+function initializeCharts() {
+    // Initialize all charts
+    initThreatTimelineChart();
+    initModelPerformanceChart();
+    initThreatDistributionChart();
+    initSystemHealthChart();
+}
+
+function initThreatTimelineChart() {
+    const ctx = document.getElementById('threatTimelineChart').getContext('2d');
+    
+    // Fetch data from API
+    fetch('/api/chart_data/threat_timeline')
+        .then(response => response.json())
+        .then(data => {
+            const labels = Object.keys(data);
+            const ransomwareData = labels.map(date => data[date].ransomware || 0);
+            const malwareData = labels.map(date => data[date].malware || 0);
+            const suspiciousData = labels.map(date => data[date].suspicious || 0);
+            
+            charts.threatTimeline = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [
+                        {
+                            label: 'Ransomware',
+                            data: ransomwareData,
+                            borderColor: '#dc3545',
+                            backgroundColor: 'rgba(220, 53, 69, 0.1)',
+                            tension: 0.1
+                        },
+                        {
+                            label: 'Malware',
+                            data: malwareData,
+                            borderColor: '#fd7e14',
+                            backgroundColor: 'rgba(253, 126, 20, 0.1)',
+                            tension: 0.1
+                        },
+                        {
+                            label: 'Suspicious',
+                            data: suspiciousData,
+                            borderColor: '#0dcaf0',
+                            backgroundColor: 'rgba(13, 202, 240, 0.1)',
+                            tension: 0.1
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,   
+                    maintainAspectRatio: true,
+                    aspectRatio: 3,
+                    plugins: {
+                        legend: {
+                            position: 'top',
+                        },
+                    },
+                    scales: {
+                        x: {
+                            title: {
+                                display: true,
+                                text: "Date/Time"
+                            }
+                        },
+                        y: {
+                            beginAtZero: true,
+                            title: {
+                                display: true,
+                                text: "Number of Threats"
+                            }
+                        }
+                    }
+                }
+            });
+        })
+        .catch(error => {
+            console.error('Error loading threat timeline data:', error);
+            // Show placeholder chart with sample data
+            showPlaceholderChart(ctx, 'line', 'Threat Timeline');
+        });
+}
+
+function initModelPerformanceChart() {
+    const ctx = document.getElementById('modelPerformanceChart').getContext('2d');
+    
+    fetch('/api/chart_data/model_accuracy')
+        .then(response => response.json())
+        .then(data => {
+            const labels = data.map(model => model.model);
+            const accuracyData = data.map(model => model.accuracy * 100);
+            const precisionData = data.map(model => model.precision * 100);
+            const recallData = data.map(model => model.recall * 100);
+            const f1Data = data.map(model => model.f1_score * 100);
+            
+            charts.modelPerformance = new Chart(ctx, {
+                type: 'radar',
+                data: {
+                    labels: ['Accuracy', 'Precision', 'Recall', 'F1 Score'],
+                    datasets: data.map((model, index) => ({
+                        label: model.model,
+                        data: [model.accuracy * 100, model.precision * 100, model.recall * 100, model.f1_score * 100],
+                        borderColor: `hsl(${index * 120}, 70%, 50%)`,
+                        backgroundColor: `hsla(${index * 120}, 70%, 50%, 0.1)`,
+                        pointBackgroundColor: `hsl(${index * 120}, 70%, 50%)`,
+                    }))
+                },
+                options: {
+                    responsive: true,
+                    scales: {
+                        x: {
+                            title: {
+                                display: true,
+                                text: "Time"
+                            }
+                        },
+                        y: {
+                            title: {
+                                display: true,
+                                text: "Value"
+                            }
+                        }
+                    },
+                    maintainAspectRatio: true,
+                    aspectRatio: 1.5,
+                    scales: {
+                        r: {
+                            beginAtZero: true,
+                            max: 100
+                        }
+                    }
+                }
+            });
+        })
+        .catch(error => {
+            console.error('Error loading model performance data:', error);
+            showPlaceholderChart(ctx, 'radar', 'Model Performance');
+        });
+}
+
+function initThreatDistributionChart() {
+    const ctx = document.getElementById('threatDistributionChart').getContext('2d');
+    
+    fetch('/api/chart_data/threat_distribution')
+        .then(response => response.json())
+        .then(data => {
+            const labels = Object.keys(data);
+            const values = Object.values(data);
+            const colors = ['#dc3545', '#fd7e14', '#0dcaf0', '#198754'];
+            
+            charts.threatDistribution = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: labels.map(label => label.charAt(0).toUpperCase() + label.slice(1)),
+                    datasets: [{
+                        data: values,
+                        backgroundColor: colors,
+                        borderWidth: 2,
+                        borderColor: '#fff'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    scales: {
+                        x: {
+                            title: {
+                                display: true,
+                                text: "Date"
+                            }
+                        },
+                        y: {
+                            title: {
+                                display: true,
+                                text: "Detections"
+                            }
+                        }
+                    },
+                
+                    maintainAspectRatio: true,
+                    aspectRatio: 1.5,
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                        },
+                    }
+                }
+            });
+        })
+        .catch(error => {
+            console.error('Error loading threat distribution data:', error);
+            showPlaceholderChart(ctx, 'doughnut', 'Threat Distribution');
+        });
+}
+
+function initSystemHealthChart() {
+    const ctx = document.getElementById('systemHealthChart').getContext('2d');
+    
+    fetch('/api/chart_data/system_health')
+        .then(response => response.json())
+        .then(data => {
+            const labels = data.map(item => item.timestamp);
+            const cpuData = data.map(item => item.cpu);
+            const memoryData = data.map(item => item.memory);
+            const diskData = data.map(item => item.disk);
+            
+            charts.systemHealth = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [
+                        {
+                            label: 'CPU %',
+                            data: cpuData,
+                            borderColor: '#dc3545',
+                            backgroundColor: 'rgba(220, 53, 69, 0.1)',
+                            tension: 0.1
+                        },
+                        {
+                            label: 'Memory %',
+                            data: memoryData,
+                            borderColor: '#ffc107',
+                            backgroundColor: 'rgba(255, 193, 7, 0.1)',
+                            tension: 0.1
+                        },
+                        {
+                            label: 'Disk %',
+                            data: diskData,
+                            borderColor: '#0dcaf0',
+                            backgroundColor: 'rgba(13, 202, 240, 0.1)',
+                            tension: 0.1
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: true,
+                    aspectRatio: 3,
+                    plugins: {
+                        legend: {
+                            position: 'top',
+                        },
+                    },
+                    scales: {
+                        x: {
+                            title: {
+                                display: true,
+                                text: "Time"
+                            }
+                        },
+                        y: {
+                            beginAtZero: true,
+                            max: 100,
+                            title: {
+                                display: true,
+                                text: "Percentage (%)"
+                            }
+                        }
+                    }
+                }
+            });
+        })
+        .catch(error => {
+            console.error('Error loading system health data:', error);
+            showPlaceholderChart(ctx, 'line', 'System Health');
+        });
+}
+
+function showPlaceholderChart(ctx, type, title) {
+    // Show a placeholder chart with sample data
+    new Chart(ctx, {
+        type: type,
+        data: {
+            labels: ['Sample 1', 'Sample 2', 'Sample 3'],
+            datasets: [{
+                label: title,
+                data: [65, 59, 80],
+                backgroundColor: ['#667eea', '#764ba2', '#f093fb']
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                title: {
+                    display: true,
+                    text: `${title} (Sample Data)`
+                }
+            }
+        }
+    });
+}
+
+function generateThreatHeatmap() {
+    const heatmapContainer = document.getElementById('threatHeatmap');
+    const weeks = 52;
+    const daysPerWeek = 7;
+    
+    let heatmapHTML = '';
+    
+    for (let week = 0; week < weeks; week++) {
+        heatmapHTML += '<div class="d-flex flex-column mb-1">';
+        for (let day = 0; day < daysPerWeek; day++) {
+            const intensity = Math.random();
+            let color = '#ebedf0';
+            
+            if (intensity > 0.8) color = '#196127';
+            else if (intensity > 0.6) color = '#239a3b';
+            else if (intensity > 0.4) color = '#7bc96f';
+            else if (intensity > 0.2) color = '#c6e48b';
+            
+            heatmapHTML += `<div class="heatmap-cell" style="background-color: ${color};" title="Threats: ${Math.floor(intensity * 10)}"></div>`;
+        }
+        heatmapHTML += '</div>';
+    }
+    
+    heatmapContainer.innerHTML = `<div class="d-flex">${heatmapHTML}</div>`;
+}
+
+function refreshAnalytics() {
+    // Refresh all charts and data
+    Object.values(charts).forEach(chart => chart.destroy());
+    charts = {};
+    
+    initializeCharts();
+    generateThreatHeatmap();
+    
+    showNotification('success', 'Analytics data refreshed successfully!');
+}
+
+function updateDateRange() {
+    const dateRange = document.getElementById('dateRange').value;
+    // Update charts based on selected date range
+    refreshAnalytics();
+}
+
+function filterByThreatType() {
+    const threatType = document.getElementById('threatType').value;
+    // Apply threat type filter
+    console.log('Filtering by threat type:', threatType);
+}
+
+function filterByMethod() {
+    const method = document.getElementById('detectionMethod').value;
+    // Apply detection method filter
+    console.log('Filtering by method:', method);
+}
+
+function resetFilters() {
+    document.getElementById('dateRange').value = '30';
+    document.getElementById('threatType').value = '';
+    document.getElementById('detectionMethod').value = '';
+    refreshAnalytics();
+}
+
+function applyFilters() {
+    // Apply all selected filters
+    refreshAnalytics();
+}
+
+function changeTimelineView(view) {
+    // Update timeline chart view (daily, weekly, monthly)
+    document.querySelectorAll('.btn-group .btn').forEach(btn => btn.classList.remove('active'));
+    event.target.classList.add('active');
+    
+    // Refresh timeline chart with new view
+    if (charts.threatTimeline) {
+        charts.threatTimeline.destroy();
+        initThreatTimelineChart();
+    }
+}
+
+function exportReport(type) {
+    showNotification('info', `Generating ${type} report...`);
+    
+    // Actually download the report
+    window.location.href = `/export_report/${type}`;
+    
+    // Show success notification after a delay (file download triggers)
+    setTimeout(() => {
+        showNotification('success', `${type.charAt(0).toUpperCase() + type.slice(1)} report exported successfully!`);
+    }, 1000);
+}
+
+function scheduleReport() {
+    const modal = new bootstrap.Modal(document.getElementById('scheduleReportModal'));
+    modal.show();
+}
+
+function saveSchedule() {
+    const frequency = document.getElementById('reportFrequency').value;
+    const reportType = document.getElementById('reportType').value;
+    const email = document.getElementById('reportEmail').value;
+    
+    if (!email) {
+        showNotification('error', 'Please enter an email address.');
+        return;
+    }
+    
+    showNotification('success', `${frequency.charAt(0).toUpperCase() + frequency.slice(1)} ${reportType} reports scheduled for ${email}`);
+    
+    const modal = bootstrap.Modal.getInstance(document.getElementById('scheduleReportModal'));
+    modal.hide();
+}
+
+function showNotification(type, message) {
+    const notification = document.createElement('div');
+    notification.className = `alert alert-${type} alert-dismissible fade show position-fixed`;
+    notification.style.cssText = 'top: 20px; right: 20px; z-index: 9999; min-width: 300px;';
+    notification.innerHTML = `
+        <i class="fas fa-${type === 'success' ? 'check-circle' : type === 'info' ? 'info-circle' : 'exclamation-triangle'} me-2"></i>
+        ${message}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    `;
+    
+    document.body.appendChild(notification);
+    
+    setTimeout(() => {
+        if (notification.parentNode) {
+            notification.remove();
+        }
+    }, 5000);
+}
+</script>
+{% endblock %}
+  

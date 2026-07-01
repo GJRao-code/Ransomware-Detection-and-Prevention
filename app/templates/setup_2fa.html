@@ -1,0 +1,548 @@
+{% extends "base.html" %}
+
+{% block title %}Setup 2FA - RansomGuard Pro{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="row justify-content-center">
+        <div class="col-lg-6">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-transparent border-0 text-center">
+                    <h4 class="mb-0">
+                        <i class="fas fa-mobile-alt text-primary me-2"></i>
+                        Setup Two-Factor Authentication
+                    </h4>
+                </div>
+                <div class="card-body">
+                    {% if current_user.is_2fa_enabled %}
+                        <div class="alert alert-success">
+                            <i class="fas fa-check-circle me-2"></i>
+                            2FA is already enabled for your account.
+                        </div>
+                        <div class="text-center">
+                            <button class="btn btn-outline-danger" onclick="disable2FA()">
+                                <i class="fas fa-times me-2"></i>
+                                Disable 2FA
+                            </button>
+                        </div>
+                    {% else %}
+                        <div id="setup-steps">
+                            <!-- Step 1: Generate Secret -->
+                            <div id="step-generate" class="mb-4">
+                                <h6 class="fw-bold mb-3">Step 1: Scan QR Code</h6>
+                                <p class="text-muted mb-3">
+                                    Scan the QR code below with your authenticator app (Google Authenticator, Authy, etc.).
+                                </p>
+                                <div id="qr-code-container" class="text-center mb-3">
+                                    <!-- QR code will be generated here -->
+                                </div>
+                                <p class="text-muted small">
+                                    If you can't scan the code, enter this key manually in your app: <code id="secret-key"></code>
+                                </p>
+                                <div class="text-center">
+                                    <button class="btn btn-primary" onclick="generateSecret()">
+                                        <i class="fas fa-qrcode me-2"></i>
+                                        Generate QR Code
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- Step 1.5: QR Code Display (shown after generation) -->
+                            <div id="step-qr-display" class="mb-4 step-transition" style="display: none;">
+                                <h6 class="fw-bold mb-3 text-success">
+                                    <i class="fas fa-check-circle me-2"></i>QR Code Generated Successfully!
+                                </h6>
+                                <div class="alert alert-info">
+                                    <i class="fas fa-info-circle me-2"></i>
+                                    <strong>Next:</strong> Scan the QR code with your authenticator app, then click continue to verify.
+                                    <hr class="my-2">
+                                    <small>
+                                        <strong>If QR code doesn't scan:</strong><br>
+                                        • Make sure your authenticator app camera is working<br>
+                                        • Ensure good lighting and steady hand<br>
+                                        • Try using the secret key below instead
+                                    </small>
+                                </div>
+                                <div id="qr-display-container" class="text-center mb-3">
+                                    <!-- Generated QR code will be displayed here -->
+                                </div>
+                                <p class="text-muted small">
+                                    Secret key: <code id="display-secret-key" class="secret-key-display"></code>
+                                </p>
+                                <div class="text-center">
+                                    <button class="btn btn-success" onclick="showVerificationStep()">
+                                        <i class="fas fa-arrow-right me-2"></i>
+                                        Continue to Verification
+                                    </button>
+                                    <button class="btn btn-outline-secondary ms-2" onclick="regenerateSecret()">
+                                        <i class="fas fa-redo me-2"></i>
+                                        Generate New Code
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- Step 2: Verify Token -->
+                            <div id="step-verify" class="mb-4 step-transition" style="display: none;">
+                                <h6 class="fw-bold mb-3">Step 2: Verify Code</h6>
+                                <p class="text-muted mb-3">
+                                    Enter the 6-digit code from your authenticator app.
+                                </p>
+
+                                <!-- Debug Information - Always visible for troubleshooting -->
+                                <div class="alert alert-info border-2" id="debug-info">
+                                    <h6 class="alert-heading mb-2">
+                                        <i class="fas fa-bug me-2"></i>Debug Information
+                                    </h6>
+                                    <div id="expected-code" class="mb-2">
+                                        <small>Loading debug info...</small>
+                                    </div>
+                                    <div class="d-flex gap-2 flex-wrap">
+                                        <button class="btn btn-sm btn-outline-info" onclick="fetchExpectedCode()">
+                                            <i class="fas fa-sync me-1"></i>Refresh
+                                        </button>
+                                        <button class="btn btn-sm btn-warning" onclick="testVerification()">
+                                            <i class="fas fa-vial me-1"></i>Test Code
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label for="verification-code" class="form-label">Verification Code</label>
+                                    <input type="text" class="form-control" id="verification-code" maxlength="6" placeholder="000000">
+                                </div>
+                                <div class="text-center">
+                                    <button class="btn btn-primary" onclick="verifyToken()">
+                                        <i class="fas fa-check me-2"></i>
+                                        Verify & Enable 2FA
+                                    </button>
+                                    <button class="btn btn-outline-secondary ms-2" onclick="backToQR()">
+                                        <i class="fas fa-arrow-left me-2"></i>
+                                        Back to QR Code
+                                    </button>
+                                </div>
+
+                                <!-- Troubleshooting Tips -->
+                                <div class="alert alert-light border">
+                                    <h6 class="alert-heading mb-2">
+                                        <i class="fas fa-lightbulb me-2"></i>Still having issues?
+                                    </h6>
+                                    <small class="text-muted">
+                                        <strong>Step-by-step troubleshooting:</strong><br>
+                                        1. Check the "Server expects" code above matches your app<br>
+                                        2. Wait 30 seconds and try the next code from your app<br>
+                                        3. Make sure your phone time is correct (auto-sync enabled)<br>
+                                        4. Remove and re-add the account in your authenticator app<br>
+                                        5. Try generating a new QR code<br>
+                                        6. Check browser console (F12) for JavaScript errors<br>
+                                        7. Check server logs for detailed error information
+                                    </small>
+                                </div>
+                            </div>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block additional_css %}
+<style>
+.qr-code-display {
+    max-width: 200px;
+    margin: 0 auto;
+    padding: 1rem;
+    background: #f8f9fa;
+    border-radius: 1rem;
+    border: 2px solid #dee2e6;
+}
+
+.qr-code-display img {
+    max-width: 100%;
+    height: auto;
+    border-radius: 0.5rem;
+}
+
+.secret-key-display {
+    background: #e9ecef;
+    border: 1px solid #ced4da;
+    border-radius: 0.5rem;
+    padding: 0.75rem;
+    font-family: 'Courier New', monospace;
+    font-size: 0.9rem;
+    word-break: break-all;
+    margin: 1rem 0;
+}
+
+.step-transition {
+    animation: fadeIn 0.5s ease-in-out;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.alert-info {
+    border-left: 4px solid #0dcaf0;
+}
+
+.btn-success:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+}
+
+.btn-outline-secondary:hover {
+    transform: translateY(-1px);
+}
+
+/* Dark mode support */
+[data-theme="dark"] .qr-code-display {
+    background: rgba(30, 41, 59, 0.8);
+    border: 2px solid rgba(99, 102, 241, 0.3);
+}
+
+[data-theme="dark"] .secret-key-display {
+    background: rgba(45, 48, 71, 0.6);
+    border: 1px solid rgba(138, 146, 255, 0.2);
+    color: #f8fafc;
+}
+
+[data-theme="dark"] .alert-info {
+    background: rgba(0, 240, 255, 0.1);
+    border-left-color: #00f0ff;
+    color: #f8fafc;
+}
+</style>
+{% endblock %}
+
+{% block additional_js %}
+<script>
+function generateSecret() {
+    // Show loading state
+    const button = event.target;
+    const originalText = button.innerHTML;
+    button.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Generating...';
+    button.disabled = true;
+
+    fetch('/setup_2fa', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: 'action=generate'
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Show QR code in display container
+            const qrDisplayContainer = document.getElementById('qr-display-container');
+            qrDisplayContainer.innerHTML = `
+                <div class="qr-code-display">
+                    <img src="${data.qr_code}" alt="QR Code" class="img-fluid border rounded" style="max-width: 200px;" onload="console.log('QR code loaded successfully')" onerror="console.error('QR code failed to load')">
+                </div>
+                <div class="mt-2">
+                    <small class="text-muted">Debug: QR URI length: ${data.qr_code.length} characters</small>
+                </div>
+            `;
+
+            // Show secret key
+            document.getElementById('display-secret-key').textContent = data.secret;
+
+            // Store secret for verification
+            window.currentSecret = data.secret;
+
+            // Hide generate step and show QR display step with animation
+            document.getElementById('step-generate').style.display = 'none';
+            const qrDisplayStep = document.getElementById('step-qr-display');
+            qrDisplayStep.style.display = 'block';
+            qrDisplayStep.classList.add('step-transition');
+
+            showNotification('success', 'QR code generated successfully! Scan it with your authenticator app.');
+        } else {
+            showNotification('error', data.message || 'Failed to generate QR code');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showNotification('error', `Network error: ${error.message || 'An error occurred'}`);
+    })
+    .finally(() => {
+        // Restore button state
+        button.innerHTML = originalText;
+        button.disabled = false;
+    });
+}
+
+function showVerificationStep() {
+    // Hide QR display and show verification with animation
+    document.getElementById('step-qr-display').style.display = 'none';
+    const verifyStep = document.getElementById('step-verify');
+    verifyStep.style.display = 'block';
+    verifyStep.classList.add('step-transition');
+
+    // Focus on verification input
+    setTimeout(() => {
+        document.getElementById('verification-code').focus();
+    }, 100);
+
+    // Show debug info in development
+    showDebugInfo();
+}
+
+function showDebugInfo() {
+    // Show debug information for troubleshooting
+    const debugDiv = document.getElementById('debug-info');
+    const expectedCodeSpan = document.getElementById('expected-code');
+
+    if (debugDiv && expectedCodeSpan) {
+        // Show debug info (make it always visible for troubleshooting)
+        debugDiv.style.display = 'block';
+
+        // Fetch expected code from server
+        fetchExpectedCode();
+
+        // Update expected code every 3 seconds
+        setInterval(fetchExpectedCode, 3000);
+    }
+}
+
+function fetchExpectedCode() {
+    fetch('/setup_2fa', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: 'action=debug'
+    })
+    .then(response => response.json())
+    .then(data => {
+        const expectedCodeSpan = document.getElementById('expected-code');
+        if (data.success && expectedCodeSpan) {
+            // Calculate time until next code
+            const now = new Date();
+            const seconds = now.getSeconds();
+            const timeInPeriod = seconds % 30;
+            const timeRemaining = 30 - timeInPeriod;
+
+            let debugHtml = `
+                <div class="d-flex align-items-center justify-content-between mb-2">
+                    <strong>Server expects:</strong>
+                    <code class="bg-primary text-white px-2 py-1 rounded">${data.expected_code}</code>
+                </div>
+                <div class="progress mb-2" style="height: 6px;">
+                    <div class="progress-bar bg-info progress-bar-striped progress-bar-animated"
+                         style="width: ${((30 - timeRemaining) / 30) * 100}%"></div>
+                </div>
+                <small class="text-muted">
+                    ⏰ Next code in <strong>${timeRemaining}s</strong> |
+                    🔑 Format: ${data.is_hex ? 'HEX (old)' : 'Base32 (new)'} |
+                    📏 Length: ${data.secret_length} |
+                    🔐 2FA: ${data.is_2fa_enabled ? 'Enabled' : 'Not Enabled'} |
+                    👤 User ID: ${data.user_id || 'None'}
+                </small>
+            `;
+
+            if (data.is_hex) {
+                debugHtml += '<br><small class="text-warning">⚠️ Using old hex format! Consider regenerating QR code.</small>';
+            }
+
+            expectedCodeSpan.innerHTML = debugHtml;
+            console.log('Debug info:', data);
+        } else {
+            expectedCodeSpan.innerHTML = `
+                <div class="text-danger">
+                    <strong>❌ Debug Error:</strong> ${data.message || 'Unknown error'}<br>
+                    <small>
+                        User ID: ${data.user_id || 'None'}<br>
+                        Authenticated: ${data.is_authenticated || false}<br>
+                        Check server logs for details.
+                    </small>
+                </div>
+            `;
+            console.error('Debug error:', data);
+        }
+    })
+    .catch(error => {
+        console.error('Debug fetch error:', error);
+        const expectedCodeSpan = document.getElementById('expected-code');
+        if (expectedCodeSpan) {
+            expectedCodeSpan.innerHTML = `
+                <div class="text-danger">
+                    <strong>❌ Network Error:</strong><br>
+                    <small>Unable to connect to server. Check if you're logged in and try refreshing the page.</small>
+                </div>
+            `;
+        }
+    });
+}
+
+function testVerification() {
+    const tokenField = document.getElementById('verification-code');
+    const currentToken = tokenField.value;
+
+    if (!currentToken || currentToken.length !== 6) {
+        showNotification('warning', 'Please enter a 6-digit code first, then click Test Verification');
+        tokenField.focus();
+        return;
+    }
+
+    console.log('Testing verification with token:', currentToken);
+
+    // Test the verification
+    fetch('/setup_2fa', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: `action=verify&token=${currentToken}`
+    })
+    .then(response => response.json())
+    .then(data => {
+        console.log('Test verification response:', data);
+        if (data.success) {
+            showNotification('success', '✅ Test verification successful! This code should work.');
+        } else {
+            showNotification('error', '❌ Test verification failed. Check server logs for details.');
+
+            // Also try the debug endpoint
+            fetch('/setup_2fa', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                },
+                body: 'action=debug'
+            })
+            .then(response => response.json())
+            .then(debugData => {
+                console.log('Debug info:', debugData);
+                if (debugData.success) {
+                    showNotification('info', `Server expects: ${debugData.expected_code}. You entered: ${currentToken}`);
+                }
+            })
+            .catch(error => {
+                console.error('Debug fetch error:', error);
+            });
+        }
+    })
+    .catch(error => {
+        console.error('Test verification error:', error);
+        showNotification('error', `Test error: ${error.message || 'An error occurred'}`);
+    });
+}
+
+function regenerateSecret() {
+    // Go back to generate step with animation
+    document.getElementById('step-qr-display').style.display = 'none';
+    const generateStep = document.getElementById('step-generate');
+    generateStep.style.display = 'block';
+    generateStep.classList.add('step-transition');
+
+    // Clear any existing QR code
+    document.getElementById('qr-display-container').innerHTML = '';
+    document.getElementById('display-secret-key').textContent = '';
+}
+
+function backToQR() {
+    // Go back to QR display from verification with animation
+    document.getElementById('step-verify').style.display = 'none';
+    const qrDisplayStep = document.getElementById('step-qr-display');
+    qrDisplayStep.style.display = 'block';
+    qrDisplayStep.classList.add('step-transition');
+
+    // Clear verification input
+    document.getElementById('verification-code').value = '';
+}
+
+function verifyToken() {
+    const token = document.getElementById('verification-code').value;
+    if (!token || token.length !== 6) {
+        showNotification('error', 'Please enter a valid 6-digit code');
+        return;
+    }
+
+    // Show loading state
+    const button = event.target;
+    const originalText = button.innerHTML;
+    button.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Verifying...';
+    button.disabled = true;
+
+    console.log('Verifying token:', token);
+
+    fetch('/setup_2fa', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: `action=verify&token=${token}`
+    })
+    .then(response => response.json())
+    .then(data => {
+        console.log('Verification response:', data);
+        if (data.success) {
+            showNotification('success', '2FA enabled successfully!');
+            setTimeout(() => location.reload(), 1500);
+        } else {
+            showNotification('error', data.message || 'Invalid verification code. Please check your authenticator app and try again.');
+
+            // Add debugging info
+            console.error('Verification failed. Check server logs for details.');
+            console.log('Token entered:', token);
+            console.log('Response:', data);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showNotification('error', `Network error: ${error.message || 'An error occurred'}`);
+    })
+    .finally(() => {
+        // Restore button state
+        button.innerHTML = originalText;
+        button.disabled = false;
+    });
+}
+
+function disable2FA() {
+    if (confirm('Are you sure you want to disable 2FA? This will reduce your account security.')) {
+        fetch('/setup_2fa', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+            },
+            body: 'action=disable'
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                showNotification('success', '2FA disabled successfully!');
+                setTimeout(() => location.reload(), 1500);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            showNotification('error', 'An error occurred');
+        });
+    }
+}
+
+function showNotification(type, message) {
+    const notification = document.createElement('div');
+    notification.className = `alert alert-${type} alert-dismissible fade show position-fixed`;
+    notification.style.cssText = 'top: 20px; right: 20px; z-index: 9999; min-width: 300px;';
+    notification.innerHTML = `
+        <i class="fas fa-${type === 'success' ? 'check-circle' : 'exclamation-triangle'} me-2"></i>
+        ${message}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    `;
+    
+    document.body.appendChild(notification);
+    
+    setTimeout(() => {
+        if (notification.parentNode) {
+            notification.remove();
+        }
+    }, 5000);
+}
+</script>
+{% endblock %}

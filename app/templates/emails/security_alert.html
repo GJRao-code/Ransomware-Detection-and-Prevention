@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Security Alert - {{ app_name }}</title>
+    <style>
+        body { font-family: Arial, sans-serif; line-height: 1.6; }
+        .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+        .alert { 
+            background-color: #fff3cd; 
+            border-left: 4px solid #ffc107; 
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 4px;
+        }
+        .footer {
+            margin-top: 30px;
+            padding-top: 15px;
+            border-top: 1px solid #eee;
+            font-size: 0.9em;
+            color: #666;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2>Security Alert</h2>
+        <p>Hello {{ username }},</p>
+        
+        <div class="alert">
+            <strong>Alert Details:</strong><br>
+            {{ alert_details|safe }}
+        </div>
+        
+        <p>If you did not perform this action, please secure your account immediately by changing your password.</p>
+        
+        <div class="footer">
+            <p>For security reasons, this is an automated message. Please do not reply to this email.</p>
+            <p>&copy; {{ current_year }} {{ app_name }}. All rights reserved.</p>
+        </div>
+    </div>
+</body>
+</html>
